@@ -1,0 +1,13 @@
+/public_html/node_modules
+/public_html/public/hot
+/public_html/public/storage
+/public_html/storage/framework/sessions/*
+/public_html/storage/framework/views/*
+/public_html/storage/framework/cache/data/*
+/public_html/storage/logs/*.log
+/public_html/vendor
+/public_html/.phpunit.result.cache
+/public_html/Homestead.json
+/public_html/Homestead.yaml
+/public_html/npm-debug.log
+/public_html/yarn-error.log
