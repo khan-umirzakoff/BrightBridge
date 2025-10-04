@@ -182,14 +182,14 @@
 }
 
 #ai-chat-widget .user-message {
-    background-color: var(--chat-primary-color); /* O'ZGARTIRILDI: Asosiy rang */
+    background-color: var(--chat-primary-color); /* Asosiy rang */
     color: white;
     align-self: flex-end; /* Foydalanuvchi xabarini o'ngga suradi */
     border-bottom-right-radius: 5px;
 }
 
 #ai-chat-widget .bot-message {
-    background-color: #f1f1f1; /* O'ZGARTIRILDI: Och kulrang */
+    background-color: #e5e5ea; /* O'ZGARTIRILDI: Yaxshiroq kontrast uchun kulrang */
     color: #333;
     border-bottom-left-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -216,12 +216,12 @@
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 #chat-input input:focus {
-    border-color: var(--chat-secondary-color);
-    box-shadow: 0 0 0 3px rgba(0, 184, 148, 0.2);
+    border-color: var(--chat-primary-color); /* O'ZGARTIRILDI: Asosiy rang */
+    box-shadow: 0 0 0 3px rgba(13, 45, 98, 0.2); /* O'ZGARTIRILDI: Asosiy rangga mos soya */
 }
 
 #chat-input button {
-    background-color: var(--chat-primary-color); /* O'ZGARTIRILDI: Asosiy rang */
+    background-color: var(--chat-primary-color); /* Asosiy rang */
     border: none;
     color: white;
     border-radius: 50%;
@@ -235,7 +235,7 @@
     transition: background-color 0.3s, transform 0.2s;
 }
 #chat-input button:hover {
-    background-color: #0a214a; /* O'ZGARTIRILDI: Asosiy rangning to'qroq varianti */
+    background-color: #0a214a; /* Asosiy rangning to'qroq varianti */
 }
 #chat-input button svg {
     width: 22px;
