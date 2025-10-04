@@ -45,8 +45,8 @@
 }
 
 #chat-icon img {
-    height: 40px; /* Logotip balandligi */
-    width: 40px;
+    height: 48px; /* Logotip balandligi */
+    width: 48px;
     object-fit: contain;
 }
 
@@ -63,7 +63,7 @@
 }
 
 .chat-icon-line2 {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 400;
     opacity: 0.9;
 }
@@ -257,14 +257,29 @@
     }
     
     #chat-icon {
-        padding: 8px 12px;
-        gap: 8px;
+        padding: 12px;
+        gap: 0;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
     }
+    
     .chat-icon-text {
         display: none; /* Kichik ekranlarda matnni yashirish */
     }
+    
     #chat-icon img {
-        height: 32px;
+        display: none; /* Logo yashirish */
+    }
+    
+    #chat-icon::before {
+        content: '';
+        display: block;
         width: 32px;
+        height: 32px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM8 11H6V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z'/%3E%3C/svg%3E");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
     }
 }
