@@ -257,29 +257,21 @@
     }
     
     #chat-icon {
-        padding: 14px;
-        gap: 0;
-        width: 80px;
-        height: 80px;
-        border-radius: 50px;
-    }
-    
-    .chat-icon-text {
-        display: none; /* Kichik ekranlarda matnni yashirish */
+        padding: 10px 16px;
+        gap: 10px;
+        border-radius: 25px;
     }
     
     #chat-icon img {
-        display: none; /* Logo yashirish */
+        height: 36px;
+        width: 36px;
     }
     
-    #chat-icon::before {
-        content: '';
-        display: block;
-        width: 36px;
-        height: 36px;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM8 11H6V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z'/%3E%3C/svg%3E");
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: center;
+    .chat-icon-line1 {
+        font-size: 14px;
+    }
+    
+    .chat-icon-line2 {
+        font-size: 13px;
     }
 }
