@@ -5,8 +5,13 @@
     <div id="chat-window">
         <div id="chat-header">
             <div class="chat-title">
-                <img src="https://brightbridge.uz/public/upl/logo.png" alt="Logo">
-                <h3><strong>Bright</strong>Bridge</h3>
+                <img src="{{ asset('upl/1111.png') }}" alt="BrightBridge Logo" class="chat-logo">
+                <div class="brand-text">
+                    <h2 class="ai-title">AI Assistant</h2>
+                    <div class="by-line">
+                        <span class="by-text">by</span> <span class="brightbridge-text">BrightBridge</span>
+                    </div>
+                </div>
             </div>
             <span id="close-chat">&times;</span>
         </div>

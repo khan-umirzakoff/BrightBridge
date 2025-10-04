@@ -67,7 +67,7 @@
     <style>.logo-container {
     display: flex;
     align-items: center;  /* Aligns items vertically */
-    background-color: ;
+    background-color: transparent;
     padding: 10px;
     
 }
