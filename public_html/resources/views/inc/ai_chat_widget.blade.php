@@ -3,6 +3,7 @@
 <div id="ai-chat-widget">
     <button id="chat-icon" aria-label="Chatni ochish">
         <img src="{{ asset('upl/1111.png') }}" alt="Chatni ochish">
+        <span>AI Yordamchi</span>
     </button>
     <div id="chat-window" role="dialog" aria-modal="true" aria-labelledby="chat-header-title">
         <div id="chat-header">

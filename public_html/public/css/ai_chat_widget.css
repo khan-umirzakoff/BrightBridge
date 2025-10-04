@@ -23,20 +23,22 @@
 }
 
 #chat-icon {
-    width: 60px;
-    height: 60px;
+    height: 55px; /* Balandlikni o'zgartirish */
+    width: auto; /* Kenglikni avtomatik qilish */
     background-color: var(--chat-primary-color);
-    border-radius: 50%;
+    border-radius: 30px; /* Kapsula shakli uchun */
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 12px; /* Ikonka va matn orasidagi masofa */
     cursor: pointer;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s;
     border: none;
     opacity: 1;
     transform: scale(1);
-    padding: 10px; /* Logotip atrofida bo'sh joy qoldirish uchun */
+    padding: 0 20px; /* Yon taraflarga bo'sh joy */
+    color: white; /* Matn rangi */
 }
 
 #chat-icon.hidden {
@@ -47,13 +49,18 @@
 
 #chat-icon:hover {
     background-color: var(--chat-secondary-color);
-    transform: scale(1.1);
+    transform: scale(1.05); /* Kattalashtirish effektini kamaytirish */
 }
 
 #chat-icon img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* Logotipning nisbatlarini saqlash */
+    width: 32px; /* Logotip o'lchami */
+    height: 32px;
+    object-fit: contain;
+}
+
+#chat-icon span {
+    font-size: 16px;
+    font-weight: 600;
 }
 
 #chat-window {
@@ -258,7 +265,15 @@
     }
     
     #chat-icon {
-        width: 55px;
-        height: 55px;
+        height: 50px;
+        padding: 0 15px;
+        gap: 8px;
+    }
+    #chat-icon span {
+        display: none; /* Kichik ekranlarda matnni yashirish */
+    }
+    #chat-icon img {
+        width: 28px;
+        height: 28px;
     }
 }
