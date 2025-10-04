@@ -23,47 +23,54 @@
 }
 
 #chat-icon {
-    height: 55px; /* Balandlikni o'zgartirish */
-    width: auto; /* Kenglikni avtomatik qilish */
+    height: auto;
+    width: auto;
     background-color: var(--chat-primary-color);
-    border-radius: 30px; /* Kapsula shakli uchun */
+    border-radius: 40px; /* To'liqroq kapsula shakli uchun */
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px; /* Ikonka va matn orasidagi masofa */
+    gap: 12px;
     cursor: pointer;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s ease, background-color 0.2s ease;
     border: none;
-    padding: 0 20px; /* Yon taraflarga bo'sh joy */
-    color: white; /* Matn rangi */
-}
-
-#chat-icon.hidden {
-    opacity: 0;
-    transform: scale(0);
-    pointer-events: none;
+    padding: 12px 20px; /* Muvozanatli bo'shliq */
+    color: white;
 }
 
 #chat-icon:hover {
-    background-color: #0a214a; /* O'ZGARTIRILDI: Asosiy rangning to'qroq varianti */
-    transform: scale(1.05); /* O'ZGARTIRILDI: Hover effekti */
+    background-color: #0a214a;
+    transform: scale(1.05);
 }
 
 #chat-icon img {
-    width: 32px; /* Logotip o'lchami */
-    height: 32px;
+    height: 48px; /* Logotip balandligi */
+    width: 48px;
     object-fit: contain;
 }
 
-#chat-icon span {
+.chat-icon-text {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    line-height: 1.25; /* Qatorlar orasidagi masofa */
+}
+
+.chat-icon-line1 {
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700; /* Qalinroq qilish */
+}
+
+.chat-icon-line2 {
+    font-size: 16px;
+    font-weight: 400;
+    opacity: 0.9;
 }
 
 #chat-window {
     position: absolute;
-    bottom: 90px; /* Tugma balandligiga moslash */
+    bottom: 100px; /* Yangi tugma balandligiga moslash */
     right: 0;
     width: var(--chat-window-width);
     height: var(--chat-window-height);
@@ -138,7 +145,7 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    align-items: flex-start; /* Pufakchalarning cho'zilishini oldini oladi */
+    align-items: flex-start;
     gap: 12px;
 }
 
@@ -228,7 +235,7 @@
 }
 #chat-input button:hover {
     background-color: #0a214a;
-    transform: scale(1.1); /* QO'SHILDI: Hover effekti */
+    transform: scale(1.1);
 }
 #chat-input button svg {
     width: 22px;
@@ -239,26 +246,32 @@
 /* Mobile responsiveness */
 @media (max-width: 480px) {
     #ai-chat-widget {
-        bottom: 15px;
+        bottom: 25px;
         right: 15px;
     }
     
     #chat-window {
         width: calc(100vw - 30px);
         height: 85vh;
-        bottom: 75px; /* Tugma balandligiga moslash */
+        bottom: 100px; /* Tugma balandligiga moslash */
     }
     
     #chat-icon {
-        height: 50px;
-        padding: 0 15px;
-        gap: 8px;
+        padding: 10px 16px;
+        gap: 10px;
+        border-radius: 25px;
     }
-    #chat-icon span {
-        display: none; /* Kichik ekranlarda matnni yashirish */
-    }
+    
     #chat-icon img {
-        width: 28px;
-        height: 28px;
+        height: 36px;
+        width: 36px;
+    }
+    
+    .chat-icon-line1 {
+        font-size: 14px;
+    }
+    
+    .chat-icon-line2 {
+        font-size: 13px;
     }
 }

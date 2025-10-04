@@ -3,7 +3,10 @@
 <div id="ai-chat-widget">
     <button id="chat-icon" aria-label="Chatni ochish">
         <img src="{{ asset('upl/1111.png') }}" alt="Chatni ochish">
-        <span>JobCare Assistant</span>
+        <div class="chat-icon-text">
+            <span class="chat-icon-line1">JobCare</span>
+            <span class="chat-icon-line2">Assistant</span>
+        </div>
     </button>
     <div id="chat-window" role="dialog" aria-modal="true" aria-labelledby="chat-header-title">
         <div id="chat-header">
@@ -31,7 +34,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const chatWidget = document.getElementById('ai-chat-widget');
     const chatIcon = document.getElementById('chat-icon');
     const chatWindow = document.getElementById('chat-window');
     const closeChat = document.getElementById('close-chat');
@@ -40,26 +42,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatMessages = document.getElementById('chat-messages');
 
     if (chatIcon && chatWindow && closeChat) {
-        // Chat ikonkasini bosganda oynani ochish/yopish
+        // Asosiy tugmani bosganda oynani ochish/yopish
         chatIcon.addEventListener('click', function(event) {
             event.stopPropagation();
             chatWindow.classList.toggle('open');
-            chatIcon.classList.toggle('hidden');
         });
 
         // "X" tugmasini bosganda oynani yopish
         closeChat.addEventListener('click', function() {
             chatWindow.classList.remove('open');
-            chatIcon.classList.remove('hidden');
         });
 
-        // Oyna tashqarisiga bosganda oynani yopish
-        document.addEventListener('click', function(event) {
-            if (chatWindow.classList.contains('open') && !chatWidget.contains(event.target)) {
-                chatWindow.classList.remove('open');
-                chatIcon.classList.remove('hidden');
-            }
-        });
+        // "Tashqarida bosganda yopish" funksiyasi olib tashlandi.
     }
 
     // Xabar yuborish funksiyasi
