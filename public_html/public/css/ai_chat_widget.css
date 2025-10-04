@@ -60,7 +60,6 @@
     bottom: 80px;
     right: 0;
     width: var(--chat-window-width);
-    /* --- 1-MUAMMO YECHIMI: Balandlikni qat'iy belgilash --- */
     height: var(--chat-window-height);
     border-radius: 18px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
@@ -144,11 +143,9 @@
     flex-grow: 1;
     padding: 20px;
     overflow-y: auto;
-    
-    /* --- ASOSIY TUZATISH SHU YERDA --- */
     display: flex;
-    flex-direction: column; /* Bu qoida 100% ishlashiga ishonch hosil qilish kerak */
-
+    flex-direction: column;
+    align-items: flex-start; /* MUHIM: Pufakchalarning cho'zilishini oldini oladi */
     gap: 12px;
 }
 
@@ -163,15 +160,15 @@
     background: #bbb;
 }
 
-.message {
-    padding: 16px 22px;
+/* YUQORI SPECIFICITY BILAN YECHIM */
+#ai-chat-widget .message {
+    padding: 16px; /* Barcha tomonlardan bir xil bo'shliq */
     border-radius: 20px;
-    max-width: 80%;
+    max-width: 85%;
     line-height: 1.6;
     font-size: 15px;
-    /* --- 3-MUAMMO YECHIMI: Matnni to'g'ri bo'lish --- */
     overflow-wrap: break-word;
-
+    word-break: break-word;
     opacity: 0;
     transform: translateY(10px);
     animation: fadeInMessage 0.4s forwards;
@@ -184,17 +181,16 @@
     }
 }
 
-.user-message {
+#ai-chat-widget .user-message {
     background-color: var(--chat-secondary-color);
     color: white;
-    align-self: flex-end;
+    align-self: flex-end; /* Foydalanuvchi xabarini o'ngga suradi */
     border-bottom-right-radius: 5px;
 }
 
-.bot-message {
+#ai-chat-widget .bot-message {
     background-color: #ffffff;
     color: #333;
-    align-self: flex-start;
     border-bottom-left-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
@@ -245,7 +241,6 @@
 #chat-input button svg {
     width: 22px;
     height: 22px;
-    /* --- 2-MUAMMO YECHIMI: Ikonka rangini oq qilish --- */
     fill: white;
 }
 
@@ -258,7 +253,7 @@
     
     #chat-window {
         width: calc(100vw - 30px);
-        height: 85vh; /* Mobil qurilmalarda balandlikni foizda berish yaxshiroq */
+        height: 85vh;
         bottom: 75px;
     }
     
