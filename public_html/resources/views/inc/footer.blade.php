@@ -93,7 +93,7 @@
                     <div class="col-xl-12">
                         <p class="copy_right text-center">
                            
-Copyright &copy;<script>document.write(new Date().getFullYear());</script> All rights reserved | This website is made  by <a href="https://t.me//uzweb_team" target="_blank">uzweb_team</a> | Assistant by <a href="https://t.me/Khan_Umirzakoff" target="_blank">Khan Umirzakoff</a>
+Copyright &copy;<script>document.write(new Date().getFullYear());</script> All rights reserved | This website is made  by <a href="https://t.me/uzweb_team" target="_blank">uzweb_team</a> | Assistant by <a href="https://t.me/Khan_Umirzakoff" target="_blank">Khan Umirzakoff</a>
                         </p>
                     </div>
                 </div>

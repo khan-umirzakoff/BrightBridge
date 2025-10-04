@@ -5,7 +5,7 @@
     --chat-secondary-color: #00b894;
     --chat-font: 'Poppins', sans-serif;
     --chat-window-width: 370px;
-    --chat-window-height: 550px; /* O'zgarmas balandlik */
+    --chat-window-height: 550px;
 }
 
 #ai-chat-widget * {
@@ -26,17 +26,24 @@
     height: auto;
     width: auto;
     background-color: var(--chat-primary-color);
-    border-radius: 40px; /* To'liqroq kapsula shakli uchun */
+    border-radius: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 12px;
     cursor: pointer;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s ease, background-color 0.2s ease;
+    transition: transform 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
     border: none;
-    padding: 12px 20px; /* Muvozanatli bo'shliq */
+    padding: 12px 20px;
     color: white;
+}
+
+/* --- REGRESSION FIX: .hidden class restored --- */
+#chat-icon.hidden {
+    opacity: 0;
+    transform: scale(0);
+    pointer-events: none;
 }
 
 #chat-icon:hover {
@@ -45,7 +52,7 @@
 }
 
 #chat-icon img {
-    height: 40px; /* Logotip balandligi */
+    height: 40px;
     width: 40px;
     object-fit: contain;
 }
@@ -54,12 +61,12 @@
     display: flex;
     flex-direction: column;
     text-align: left;
-    line-height: 1.25; /* Qatorlar orasidagi masofa */
+    line-height: 1.25;
 }
 
 .chat-icon-line1 {
     font-size: 16px;
-    font-weight: 700; /* Qalinroq qilish */
+    font-weight: 700;
 }
 
 .chat-icon-line2 {
@@ -70,7 +77,7 @@
 
 #chat-window {
     position: absolute;
-    bottom: 100px; /* Yangi tugma balandligiga moslash */
+    bottom: 100px;
     right: 0;
     width: var(--chat-window-width);
     height: var(--chat-window-height);
@@ -117,10 +124,21 @@
     object-fit: contain;
 }
 
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
 .ai-title {
     font-size: 18px;
     font-weight: 600;
     line-height: 1.2;
+}
+
+.by-line {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
 }
 
 #close-chat {
@@ -253,7 +271,7 @@
     #chat-window {
         width: calc(100vw - 30px);
         height: 85vh;
-        bottom: 85px; /* Tugma balandligiga moslash */
+        bottom: 85px;
     }
     
     #chat-icon {
@@ -261,7 +279,7 @@
         gap: 8px;
     }
     .chat-icon-text {
-        display: none; /* Kichik ekranlarda matnni yashirish */
+        display: none;
     }
     #chat-icon img {
         height: 32px;
