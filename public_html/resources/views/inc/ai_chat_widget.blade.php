@@ -4,7 +4,7 @@
     <button id="chat-icon" aria-label="Chatni ochish">
         <img src="{{ asset('upl/1111.png') }}" alt="Chatni ochish">
         <div class="chat-icon-text">
-            <span class="chat-icon-line1">AI</span>
+            <span class="chat-icon-line1">JobCare</span>
             <span class="chat-icon-line2">Assistant</span>
         </div>
     </button>
@@ -13,8 +13,7 @@
             <div class="chat-title">
                 <img src="{{ asset('upl/1111.png') }}" alt="JobCare Logo" class="chat-logo">
                 <div class="brand-text">
-                    <h2 id="chat-header-title" class="ai-title">AI Assistant</h2>
-                    <div class="by-line">by JobCare</div>
+                    <h2 id="chat-header-title" class="ai-title">JobCare Assistant</h2>
                 </div>
             </div>
             <button id="close-chat" aria-label="Chatni yopish">&times;</button>
