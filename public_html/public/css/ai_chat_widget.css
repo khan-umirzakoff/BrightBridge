@@ -33,10 +33,8 @@
     gap: 12px; /* Ikonka va matn orasidagi masofa */
     cursor: pointer;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s;
+    transition: transform 0.2s ease, background-color 0.2s ease;
     border: none;
-    opacity: 1;
-    transform: scale(1);
     padding: 0 20px; /* Yon taraflarga bo'sh joy */
     color: white; /* Matn rangi */
 }
@@ -48,8 +46,8 @@
 }
 
 #chat-icon:hover {
-    background-color: var(--chat-secondary-color);
-    transform: scale(1.05); /* Kattalashtirish effektini kamaytirish */
+    background-color: #0a214a; /* O'ZGARTIRILDI: Asosiy rangning to'qroq varianti */
+    transform: scale(1.05); /* O'ZGARTIRILDI: Hover effekti */
 }
 
 #chat-icon img {
@@ -65,7 +63,7 @@
 
 #chat-window {
     position: absolute;
-    bottom: 80px;
+    bottom: 90px; /* Tugma balandligiga moslash */
     right: 0;
     width: var(--chat-window-width);
     height: var(--chat-window-height);
@@ -112,23 +110,10 @@
     object-fit: contain;
 }
 
-.brand-text {
-    display: flex;
-    flex-direction: column;
-}
-
 .ai-title {
     font-size: 18px;
     font-weight: 600;
     line-height: 1.2;
-}
-
-.by-line {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.7);
-}
-.by-line strong {
-    font-weight: 600;
 }
 
 #close-chat {
@@ -153,7 +138,7 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    align-items: flex-start; /* MUHIM: Pufakchalarning cho'zilishini oldini oladi */
+    align-items: flex-start; /* Pufakchalarning cho'zilishini oldini oladi */
     gap: 12px;
 }
 
@@ -168,9 +153,8 @@
     background: #bbb;
 }
 
-/* YUQORI SPECIFICITY BILAN YECHIM */
 #ai-chat-widget .message {
-    padding: 16px; /* Barcha tomonlardan bir xil bo'shliq */
+    padding: 16px;
     border-radius: 20px;
     max-width: 85%;
     line-height: 1.6;
@@ -190,14 +174,14 @@
 }
 
 #ai-chat-widget .user-message {
-    background-color: var(--chat-primary-color); /* Asosiy rang */
+    background-color: var(--chat-primary-color);
     color: white;
-    align-self: flex-end; /* Foydalanuvchi xabarini o'ngga suradi */
+    align-self: flex-end;
     border-bottom-right-radius: 5px;
 }
 
 #ai-chat-widget .bot-message {
-    background-color: #e5e5ea; /* Yaxshiroq kontrast uchun kulrang */
+    background-color: #e5e5ea;
     color: #333;
     border-bottom-left-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -224,12 +208,12 @@
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 #chat-input input:focus {
-    border-color: var(--chat-primary-color); /* Asosiy rang */
-    box-shadow: 0 0 0 3px rgba(13, 45, 98, 0.2); /* Asosiy rangga mos soya */
+    border-color: var(--chat-primary-color);
+    box-shadow: 0 0 0 3px rgba(13, 45, 98, 0.2);
 }
 
 #chat-input button {
-    background-color: var(--chat-primary-color); /* Asosiy rang */
+    background-color: var(--chat-primary-color);
     border: none;
     color: white;
     border-radius: 50%;
@@ -240,10 +224,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.3s, transform 0.2s;
+    transition: background-color 0.2s, transform 0.2s;
 }
 #chat-input button:hover {
-    background-color: #0a214a; /* Asosiy rangning to'qroq varianti */
+    background-color: #0a214a;
+    transform: scale(1.1); /* QO'SHILDI: Hover effekti */
 }
 #chat-input button svg {
     width: 22px;
@@ -261,7 +246,7 @@
     #chat-window {
         width: calc(100vw - 30px);
         height: 85vh;
-        bottom: 75px;
+        bottom: 75px; /* Tugma balandligiga moslash */
     }
     
     #chat-icon {

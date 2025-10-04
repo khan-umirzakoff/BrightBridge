@@ -3,24 +3,21 @@
 <div id="ai-chat-widget">
     <button id="chat-icon" aria-label="Chatni ochish">
         <img src="{{ asset('upl/1111.png') }}" alt="Chatni ochish">
-        <span>AI Yordamchi</span>
+        <span>JobCare Assistant</span>
     </button>
     <div id="chat-window" role="dialog" aria-modal="true" aria-labelledby="chat-header-title">
         <div id="chat-header">
             <div class="chat-title">
-                <img src="{{ asset('upl/1111.png') }}" alt="BrightBridge Logo" class="chat-logo">
+                <img src="{{ asset('upl/1111.png') }}" alt="JobCare Logo" class="chat-logo">
                 <div class="brand-text">
-                    <h2 id="chat-header-title" class="ai-title">AI Assistant</h2>
-                    <div class="by-line">
-                        <span class="by-text">by</span> <span class="brightbridge-text">BrightBridge</span>
-                    </div>
+                    <h2 id="chat-header-title" class="ai-title">JobCare Assistant</h2>
                 </div>
             </div>
             <button id="close-chat" aria-label="Chatni yopish">&times;</button>
         </div>
         <div id="chat-messages" role="log" aria-live="polite">
            <div class="bot-message message">
-                Salom! Men BrightBridge AI yordamchisiman. Sizga qanday yordam bera olaman?
+                Salom! Men JobCare AI yordamchisiman. Sizga qanday yordam bera olaman?
             </div>
         </div>
         <div id="chat-input">
