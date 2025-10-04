@@ -39,13 +39,6 @@
     color: white;
 }
 
-/* --- REGRESSION FIX: .hidden class restored --- */
-#chat-icon.hidden {
-    opacity: 0;
-    transform: scale(0);
-    pointer-events: none;
-}
-
 #chat-icon:hover {
     background-color: #0a214a;
     transform: scale(1.05);
