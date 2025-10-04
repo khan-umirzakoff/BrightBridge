@@ -49,6 +49,8 @@
     <link rel="stylesheet" href="{{ asset('css/slicknav.css') }}">
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     
+    <!-- AI Chat Widget CSS -->
+    <link rel="stylesheet" href="{{ asset('css/ai_chat_widget.css') }}">
     
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6426365351860616"
      crossorigin="anonymous"></script>
@@ -70,6 +72,8 @@
     @yield("content")
 
     @include("inc.footer")
+
+    @include("inc.ai_chat_widget")
 
     <!-- Scripts (No Duplicates, All from public/) -->
     <script src="{{ asset('js/vendor/modernizr-3.5.0.min.js') }}"></script>
@@ -117,7 +121,6 @@
                 " - $" + $("#slider-range").slider("values", 1) + "/ Year");
         });
     </script>
-       <script src="https://cdn.botpress.cloud/webchat/v3.3/inject.js"></script>
-<script src="https://files.bpcontent.cloud/2025/09/30/23/20250930233636-5IZJAMDW.js" defer></script>
+    @include("inc.ai_chat_widget")
 </body>
 </html>

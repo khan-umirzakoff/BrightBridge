@@ -8,6 +8,9 @@
   <!-- CKEditor -->
   <script src="https://cdn.ckeditor.com/4.22.1/basic/ckeditor.js"></script>
 
+  <!-- AI Chat Widget CSS -->
+  <link rel="stylesheet" href="{{ asset('css/ai_chat_widget.css') }}">
+
   <style>
     * { box-sizing: border-box; }
     body {
@@ -167,9 +170,6 @@
   }
 </script>
 
-<script src="https://cdn.botpress.cloud/webchat/v3.3/inject.js"></script>
-<script src="https://files.bpcontent.cloud/2025/09/30/23/20250930233636-5IZJAMDW.js" defer></script>
-   <script src="https://cdn.botpress.cloud/webchat/v3.3/inject.js"></script>
-<script src="https://files.bpcontent.cloud/2025/09/30/23/20250930233636-5IZJAMDW.js" defer></script>
+@include("inc.ai_chat_widget")
 </body>
 </html>
