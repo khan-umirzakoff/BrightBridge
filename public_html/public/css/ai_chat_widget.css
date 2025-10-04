@@ -182,14 +182,14 @@
 }
 
 #ai-chat-widget .user-message {
-    background-color: var(--chat-secondary-color);
+    background-color: var(--chat-primary-color); /* O'ZGARTIRILDI: Asosiy rang */
     color: white;
     align-self: flex-end; /* Foydalanuvchi xabarini o'ngga suradi */
     border-bottom-right-radius: 5px;
 }
 
 #ai-chat-widget .bot-message {
-    background-color: #ffffff;
+    background-color: #f1f1f1; /* O'ZGARTIRILDI: Och kulrang */
     color: #333;
     border-bottom-left-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -221,7 +221,7 @@
 }
 
 #chat-input button {
-    background-color: var(--chat-secondary-color);
+    background-color: var(--chat-primary-color); /* O'ZGARTIRILDI: Asosiy rang */
     border: none;
     color: white;
     border-radius: 50%;
@@ -235,8 +235,7 @@
     transition: background-color 0.3s, transform 0.2s;
 }
 #chat-input button:hover {
-    background-color: #009c7c;
-    transform: scale(1.1);
+    background-color: #0a214a; /* O'ZGARTIRILDI: Asosiy rangning to'qroq varianti */
 }
 #chat-input button svg {
     width: 22px;
