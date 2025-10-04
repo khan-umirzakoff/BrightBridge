@@ -164,14 +164,14 @@
 }
 
 .message {
-    padding: 16px 22px;
+    padding: 18px 26px; /* Bo'shliqni kattalashtirish */
     border-radius: 20px;
-    max-width: 80%;
+    max-width: 85%;
     line-height: 1.6;
     font-size: 15px;
-    /* --- 3-MUAMMO YECHIMI: Matnni to'g'ri bo'lish --- */
+    /* --- Matnni to'g'ri bo'lish uchun --- */
     overflow-wrap: break-word;
-    word-break: break-all; /* QO'SHIMCHA: Uzun so'zlarni sindirish uchun */
+    word-break: break-word; /* Qo'shimcha xavfsizlik uchun */
 
     opacity: 0;
     transform: translateY(10px);
