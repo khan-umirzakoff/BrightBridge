@@ -12,3 +12,17 @@
 /public_html/npm-debug.log
 /public_html/yarn-error.log
 /php74.zip
+
+public_html/
+public_html/storage/*.key
+public_html/.idea
+public_html/_ide_helper.php
+public_html/.DS_Store
+
+# Custom ignores
+run.sh
+/mysql-data/
+/mysql-run/
+mysql.log
+*.log
+error_log

@@ -10,11 +10,13 @@ let
 
   phpPkg = if builtins.hasAttr "php74" old then old.php74 else old.php;
   composerPkg = if builtins.hasAttr "php74Packages" old then old.php74Packages.composer else (old.phpPackages.composer or old.composer);
+  mysqlPkg = old.mysql57;
 
 in
 {
   packages = [
     phpPkg
     composerPkg
+    mysqlPkg
   ];
 }
