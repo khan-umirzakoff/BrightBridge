@@ -2,7 +2,7 @@
 
 <div id="ai-chat-widget">
     <button id="chat-icon" aria-label="Chatni ochish">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M21 11.5c0-4.42-3.58-8-8-8S5 7.08 5 11.5c0 2.61 1.43 4.93 3.59 6.32L8 20v-2.5c-4.32-.8-7.5-3.53-7.5-6C.5 7.01 4.51 3 9.5 3s9 4.01 9 8.5c0 3.31-2.69 6-6 6h-1.5l-2.09 2.09c-.25.25-.59.39-.94.39-.36 0-.7-.14-.95-.39-.5-.5-.5-1.31 0-1.81L9.19 18H12c3.31 0 6-2.69 6-6zM9.5 15c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm5 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+        <img src="{{ asset('upl/1111.png') }}" alt="Chatni ochish">
     </button>
     <div id="chat-window" role="dialog" aria-modal="true" aria-labelledby="chat-header-title">
         <div id="chat-header">
