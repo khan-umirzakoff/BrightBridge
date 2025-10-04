@@ -161,7 +161,7 @@
 }
 
 .message {
-    padding: 12px 20px;
+    padding: 16px; /* Barcha tomonlardan bir xil bo'shliq */
     border-radius: 20px;
     max-width: 85%;
     line-height: 1.6;
