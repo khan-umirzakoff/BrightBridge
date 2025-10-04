@@ -160,7 +160,8 @@
     background: #bbb;
 }
 
-.message {
+/* YUQORI SPECIFICITY BILAN YECHIM */
+#ai-chat-widget .message {
     padding: 16px; /* Barcha tomonlardan bir xil bo'shliq */
     border-radius: 20px;
     max-width: 85%;
@@ -180,17 +181,16 @@
     }
 }
 
-.user-message {
+#ai-chat-widget .user-message {
     background-color: var(--chat-secondary-color);
     color: white;
     align-self: flex-end; /* Foydalanuvchi xabarini o'ngga suradi */
     border-bottom-right-radius: 5px;
 }
 
-.bot-message {
+#ai-chat-widget .bot-message {
     background-color: #ffffff;
     color: #333;
-    /* align-self: flex-start; - endi bu kerak emas, chunki #chat-messages'da sukut bo'yicha shunday */
     border-bottom-left-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
