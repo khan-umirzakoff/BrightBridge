@@ -171,6 +171,7 @@
     font-size: 15px;
     /* --- 3-MUAMMO YECHIMI: Matnni to'g'ri bo'lish --- */
     overflow-wrap: break-word;
+    word-break: break-all; /* QO'SHIMCHA: Uzun so'zlarni sindirish uchun */
 
     opacity: 0;
     transform: translateY(10px);
