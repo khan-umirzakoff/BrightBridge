@@ -3,7 +3,10 @@
 <div id="ai-chat-widget">
     <button id="chat-icon" aria-label="Chatni ochish">
         <img src="{{ asset('upl/1111.png') }}" alt="Chatni ochish">
-        <span>JobCare Assistant</span>
+        <div class="chat-icon-text">
+            <span class="chat-icon-line1">JobCare</span>
+            <span class="chat-icon-line2">Assistant</span>
+        </div>
     </button>
     <div id="chat-window" role="dialog" aria-modal="true" aria-labelledby="chat-header-title">
         <div id="chat-header">
