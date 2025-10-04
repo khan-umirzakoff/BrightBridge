@@ -9,7 +9,18 @@
   <script src="https://cdn.ckeditor.com/4.22.1/basic/ckeditor.js"></script>
 
   <!-- AI Chat Widget CSS -->
-  <link rel="stylesheet" href="{{ asset('css/ai_chat_widget.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/ai_chat_widget.css') }}?v={{ time() }}">
+  
+  <!-- Additional CSS to ensure widget positioning -->
+  <style>
+    /* Ensure AI chat widget stays fixed */
+    #ai-chat-widget {
+      position: fixed !important;
+      bottom: 20px !important;
+      right: 20px !important;
+      z-index: 99999 !important;
+    }
+  </style>
 
   <style>
     * { box-sizing: border-box; }

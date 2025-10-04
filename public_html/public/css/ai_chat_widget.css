@@ -1,3 +1,4 @@
+/* AI Chat Widget - Specific positioning with high priority */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
@@ -10,13 +11,15 @@
 #ai-chat-widget * {
     font-family: var(--chat-font);
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 #ai-chat-widget {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    z-index: 9999;
+    z-index: 99999;
 }
 
 #chat-icon {
@@ -32,6 +35,11 @@
     transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s;
     opacity: 1;
     transform: scale(1);
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
 }
 
 #chat-icon.hidden {
@@ -51,6 +59,9 @@
 }
 
 #chat-window {
+    position: absolute;
+    bottom: 70px;
+    right: 0;
     width: 360px;
     height: 520px;
     border-radius: 15px;
@@ -186,5 +197,30 @@
 
 #chat-input button:hover {
     background-color: #009c7c;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+    #ai-chat-widget {
+        bottom: 10px !important;
+        right: 10px !important;
+    }
+    
+    #chat-window {
+        width: calc(100vw - 20px) !important;
+        height: 80vh !important;
+        right: -10px !important;
+        bottom: 70px !important;
+    }
+    
+    #chat-icon {
+        width: 50px !important;
+        height: 50px !important;
+    }
+    
+    #chat-icon svg {
+        width: 25px !important;
+        height: 25px !important;
+    }
 }
 
