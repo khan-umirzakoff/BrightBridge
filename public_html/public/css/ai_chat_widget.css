@@ -1,9 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 :root {
-    --chat-primary-color: #0d2d62; /* Asosiy to'q ko'k */
-    --chat-secondary-color: #00b894; /* Yashil rang */
+    --chat-primary-color: #0d2d62;
+    --chat-secondary-color: #00b894;
     --chat-font: 'Poppins', sans-serif;
+    --chat-window-width: 370px;
+    --chat-window-height: 550px; /* O'zgarmas balandlik */
 }
 
 #ai-chat-widget * {
@@ -15,9 +17,9 @@
 
 #ai-chat-widget {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 99999;
+    bottom: 25px;
+    right: 25px;
+    z-index: 10000;
 }
 
 #chat-icon {
@@ -29,49 +31,53 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s;
+    border: none;
     opacity: 1;
     transform: scale(1);
 }
 
 #chat-icon.hidden {
     opacity: 0;
-    transform: scale(0.5);
+    transform: scale(0);
     pointer-events: none;
 }
 
 #chat-icon:hover {
     background-color: var(--chat-secondary-color);
+    transform: scale(1.1);
 }
 
 #chat-icon svg {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     fill: white;
 }
 
 #chat-window {
     position: absolute;
-    bottom: 70px;
+    bottom: 80px;
     right: 0;
-    width: 360px;
-    height: 520px;
-    border-radius: 15px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    width: var(--chat-window-width);
+    /* --- 1-MUAMMO YECHIMI: Balandlikni qat'iy belgilash --- */
+    height: var(--chat-window-height);
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background-color: #ffffff;
-    transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease;
+    background-color: #f9f9f9;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px) scale(0.95);
     pointer-events: none;
+    transform-origin: bottom right;
 }
 
 #chat-window.open {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
     pointer-events: auto;
 }
 
@@ -82,91 +88,100 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: none;
     flex-shrink: 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    min-height: 70px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .chat-title {
     display: flex;
     align-items: center;
-    gap: 8px;
-    flex: 1;
+    gap: 12px;
 }
 
 .chat-logo {
-    height: 40px;
-    width: auto;
-    max-width: 60px;
+    height: 45px;
+    width: 45px;
+    border-radius: 8px;
     object-fit: contain;
-    border-radius: 4px;
-    background: transparent;
-    padding: 0;
-    margin-right: 2px;
 }
 
 .brand-text {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    justify-content: center;
-    align-items: flex-start;
 }
 
 .ai-title {
-    margin: 0;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 600;
     line-height: 1.2;
-    color: white;
 }
 
 .by-line {
-    display: flex;
-    align-items: center;
-    gap: 4px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
 }
-
-.by-text {
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.6);
-    font-weight: 400;
-}
-
-.brightbridge-text {
-    font-size: 16px;
-    color: white;
-    font-weight: 700;
-    letter-spacing: 0.3px;
+.by-line strong {
+    font-weight: 600;
 }
 
 #close-chat {
+    background: none;
+    border: none;
+    color: white;
     cursor: pointer;
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 300;
     opacity: 0.8;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, transform 0.2s;
+    padding: 0 5px;
 }
 #close-chat:hover {
     opacity: 1;
+    transform: rotate(90deg);
 }
 
 #chat-messages {
     flex-grow: 1;
-    padding: 15px;
+    padding: 20px;
     overflow-y: auto;
+    
+    /* --- ASOSIY TUZATISH SHU YERDA --- */
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* Bu qoida 100% ishlashiga ishonch hosil qilish kerak */
+
     gap: 12px;
 }
 
+#chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+#chat-messages::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+#chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #bbb;
+}
+
 .message {
-    padding: 10px 15px;
+    padding: 16px 22px;
     border-radius: 20px;
-    max-width: 85%;
-    word-wrap: break-word;
-    line-height: 1.5;
+    max-width: 80%;
+    line-height: 1.6;
+    font-size: 15px;
+    /* --- 3-MUAMMO YECHIMI: Matnni to'g'ri bo'lish --- */
+    overflow-wrap: break-word;
+
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeInMessage 0.4s forwards;
+}
+
+@keyframes fadeInMessage {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .user-message {
@@ -177,33 +192,36 @@
 }
 
 .bot-message {
-    background-color: #f1f1f1;
+    background-color: #ffffff;
     color: #333;
     align-self: flex-start;
     border-bottom-left-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 #chat-input {
     display: flex;
-    padding: 12px;
+    padding: 15px;
     border-top: 1px solid #e0e0e0;
     align-items: center;
     flex-shrink: 0;
+    background-color: #fff;
 }
 
 #chat-input input {
     flex-grow: 1;
-    border: none;
-    background: #f0f0f0;
+    border: 1px solid #ddd;
+    background: #fdfdfd;
     border-radius: 20px;
     padding: 10px 18px;
     font-size: 14px;
     margin-right: 10px;
     outline: none;
-    transition: box-shadow 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 #chat-input input:focus {
-    box-shadow: 0 0 0 2px rgba(0, 184, 148, 0.5);
+    border-color: var(--chat-secondary-color);
+    box-shadow: 0 0 0 3px rgba(0, 184, 148, 0.2);
 }
 
 #chat-input button {
@@ -211,42 +229,41 @@
     border: none;
     color: white;
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     cursor: pointer;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s, transform 0.2s;
 }
-
 #chat-input button:hover {
     background-color: #009c7c;
+    transform: scale(1.1);
+}
+#chat-input button svg {
+    width: 22px;
+    height: 22px;
+    /* --- 2-MUAMMO YECHIMI: Ikonka rangini oq qilish --- */
+    fill: white;
 }
 
 /* Mobile responsiveness */
 @media (max-width: 480px) {
     #ai-chat-widget {
-        bottom: 10px;
-        right: 10px;
+        bottom: 15px;
+        right: 15px;
     }
     
     #chat-window {
-        width: calc(100vw - 20px);
-        height: 80vh;
-        right: -10px;
-        bottom: 70px;
+        width: calc(100vw - 30px);
+        height: 85vh; /* Mobil qurilmalarda balandlikni foizda berish yaxshiroq */
+        bottom: 75px;
     }
     
     #chat-icon {
-        width: 50px;
-        height: 50px;
-    }
-    
-    #chat-icon svg {
-        width: 25px;
-        height: 25px;
+        width: 55px;
+        height: 55px;
     }
 }
-
