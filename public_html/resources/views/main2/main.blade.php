@@ -121,6 +121,5 @@
                 " - $" + $("#slider-range").slider("values", 1) + "/ Year");
         });
     </script>
-    @include("inc.ai_chat_widget")
 </body>
 </html>

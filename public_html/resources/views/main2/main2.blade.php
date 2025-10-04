@@ -123,6 +123,5 @@
         });
     </script>
     
-    @include("inc.ai_chat_widget")
 </body>
 </html>
