@@ -13,7 +13,6 @@
 /public_html/yarn-error.log
 /php74.zip
 
-public_html/
 public_html/storage/*.key
 public_html/.idea
 public_html/_ide_helper.php
