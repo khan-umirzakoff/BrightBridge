@@ -32,32 +32,37 @@
         <!-- New Chat Modal -->
         <div id="new-chat-modal" class="new-chat-modal">
             <div class="modal-content-new">
-                <h3>Yangi Suhbat Boshlash</h3>
-                <p>Joriy suhbat tarixi o'chiriladi</p>
-                <button class="btn-new-chat" id="confirm-new-chat">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                    </svg>
-                    New Chat
-                </button>
-                <button class="btn-cancel" id="cancel-new-chat">Cancel</button>
+                <div class="modal-header">
+                    <h3>Start New Chat</h3>
+                    <p>Current chat history will be deleted</p>
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn-new-chat" id="confirm-new-chat">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        New Chat
+                    </button>
+                    <button class="btn-cancel" id="cancel-new-chat">Cancel</button>
+                </div>
             </div>
         </div>
 
         <div id="chat-input">
-            <div id="image-previews" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;"></div>
-            <input type="file" id="chat-image-input" accept="image/*" multiple style="display:none;">
-            <button id="chat-image-button" aria-label="Rasm yuborish" title="Rasm yuklash">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <polyline points="21 15 16 10 5 21"/>
-                </svg>
-            </button>
-            <input type="text" id="chat-input-field" placeholder="Xabar yozing..." aria-label="Xabar kiritish maydoni">
-            <button id="chat-send-button" aria-label="Xabarni yuborish">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-            </button>
+            <div id="image-previews" style="display:none;flex-wrap:wrap;gap:5px;margin-bottom:10px;width:100%;"></div>
+            <div style="display:flex;align-items:center;gap:12px;width:100%;">
+                <input type="file" id="chat-image-input" accept="image/*" multiple style="display:none;">
+                <button id="chat-image-button" aria-label="Rasm yuborish" title="Rasm yuklash">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path opacity="0.5" d="M17 9.00195C19.175 9.01406 20.3529 9.11051 21.1213 9.8789C22 10.7576 22 12.1718 22 15.0002V16.0002C22 18.8286 22 20.2429 21.1213 21.1215C20.2426 22.0002 18.8284 22.0002 16 22.0002H8C5.17157 22.0002 3.75736 22.0002 2.87868 21.1215C2 20.2429 2 18.8286 2 16.0002L2 15.0002C2 12.1718 2 10.7576 2.87868 9.87889C3.64706 9.11051 4.82497 9.01406 7 9.00195" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        <path d="M12 15L12 2M12 2L15 5.5M12 2L9 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <input type="text" id="chat-input-field" placeholder="Xabar yozing..." aria-label="Xabar kiritish maydoni">
+                <button id="chat-send-button" aria-label="Xabarni yuborish">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -165,12 +170,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     const reader = new FileReader();
                     reader.onload = (event) => {
                         const imageContainer = document.getElementById('image-previews');
+                        imageContainer.style.display = 'flex';
                         const imageWrapper = document.createElement('div');
                         imageWrapper.className = 'image-preview-wrapper';
+                        imageWrapper.style.position = 'relative';
+                        imageWrapper.style.display = 'inline-block';
                         imageWrapper.innerHTML = `
-                            <img src="${event.target.result}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #ddd;">
+                            <img src="${event.target.result}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;background:transparent;">
                             <button onclick="this.parentElement.remove(); updateSendButton();" 
-                                style="position:absolute;top:-5px;right:-5px;background:red;color:white;border:none;border-radius:50%;width:16px;height:16px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;">×</button>
+                                style="position:absolute;top:-6px;right:-6px;background:#ff4757;color:white;border:none;border-radius:50%;width:16px;height:16px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:bold;">×</button>
                         `;
                         imageContainer.appendChild(imageWrapper);
                         updateSendButton();
@@ -212,8 +220,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Send button holatini yangilash
     function updateSendButton() {
         const imagePreviews = document.querySelectorAll('.image-preview-wrapper');
+        const imageContainer = document.getElementById('image-previews');
         const hasImage = imagePreviews.length > 0;
         const hasText = chatInputField.value.trim() !== '';
+        
+        // Image container ni ko'rsatish/yashirish
+        if (hasImage) {
+            imageContainer.style.display = 'flex';
+        } else {
+            imageContainer.style.display = 'none';
+        }
+        
         chatSendButton.disabled = !(hasText || hasImage);
     }
 
@@ -250,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (msg.images && msg.images.length > 0) {
                                 content += '<div style="display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap;">';
                                 msg.images.forEach(imageBase64 => {
-                                    content += `<img src="data:image/jpeg;base64,${imageBase64}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #ddd;">`;
+                                    content += `<img src="data:image/jpeg;base64,${imageBase64}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;background:transparent;margin:2px;">`;
                                 });
                                 content += '</div>';
                             }
@@ -361,7 +378,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (images.length > 0) {
             content += '<div style="display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap;">';
             images.forEach(imageBase64 => {
-                content += `<img src="data:image/jpeg;base64,${imageBase64}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #ddd;">`;
+                content += `<img src="data:image/jpeg;base64,${imageBase64}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;background:transparent;margin:2px;">`;
             });
             content += '</div>';
         }
