@@ -5,6 +5,7 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <title>JobCare</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- SEO Meta Tags -->
     <meta name="description" content="BrightBridge to Success, JobCare for Growth. Total Quality Management Platform Meeting Global Standards for Education & Career Growth">
