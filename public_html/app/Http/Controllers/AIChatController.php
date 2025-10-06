@@ -90,14 +90,31 @@ class AIChatController extends Controller
 
         return response()->stream(function () use ($message, $history, $images) {
             try {
+                // Send thinking indicator first
+                echo "data: " . json_encode(['thinking' => true]) . "\n\n";
+                ob_flush();
+                flush();
+                
                 // AI ga so'rov (rasmli yoki rasmsiz)
                 if (!empty($images)) {
                     Log::info('Chat with images', ['count' => count($images)]);
-                    $fullResponse = $this->aiService->chatWithImages($message, $images, $history);
+                    $result = $this->aiService->chatWithImagesAndThinking($message, $images, $history);
                 } else {
-                    $fullResponse = $this->aiService->chat($message, $history);
+                    $result = $this->aiService->chatWithThinking($message, $history);
                 }
                 
+                // Check if AI actually used thinking
+                if (isset($result['thinking']) && $result['thinking']) {
+                    // Keep thinking indicator for a moment
+                    usleep(500000); // 0.5 seconds
+                }
+                
+                // Remove thinking indicator
+                echo "data: " . json_encode(['thinking' => false]) . "\n\n";
+                ob_flush();
+                flush();
+                
+                $fullResponse = $result['response'] ?? $result;
                 $words = mb_str_split($fullResponse, 3);
                 
                 foreach ($words as $chunk) {

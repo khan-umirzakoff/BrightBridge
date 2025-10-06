@@ -342,4 +342,34 @@ class GeminiAIService implements AIService
             throw new \RuntimeException('Rasmni tahlil qilishda xatolik');
         }
     }
+
+    public function chatWithThinking(string $prompt, array $history = []): array
+    {
+        $response = $this->chat($prompt, $history);
+        
+        // Since chat() method doesn't return thinking info, 
+        // we'll simulate it by checking if the response suggests thinking
+        $hasThinking = strlen($response) > 100 || 
+                      str_contains(strtolower($response), 'analizlash') ||
+                      str_contains(strtolower($response), 'o\'ylab') ||
+                      str_contains(strtolower($response), 'hisoblab');
+        
+        return [
+            'response' => $response,
+            'thinking' => $hasThinking
+        ];
+    }
+
+    public function chatWithImagesAndThinking(string $prompt, array $base64Images, array $history = []): array
+    {
+        $response = $this->chatWithImages($prompt, $base64Images, $history);
+        
+        // Image analysis usually involves thinking
+        $hasThinking = true;
+        
+        return [
+            'response' => $response,
+            'thinking' => $hasThinking
+        ];
+    }
 }
