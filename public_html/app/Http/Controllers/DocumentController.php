@@ -17,8 +17,32 @@ class DocumentController extends Controller
         $this->aiService = $aiService;
     }
 
+    public function index()
+    {
+        session_start();
+        if (!isset($_SESSION['company_id'])){
+            return redirect()->route("login2");
+        }
+
+        $documents = DB::table('ai_documents')
+            ->select(['id', 'title', 'category', 'description', 'file_name', 'file_size', 'created_at'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return view('admin.pages.ai_documents', compact('documents'));
+    }
+
     public function upload(Request $request)
     {
+        session_start();
+        if (!isset($_SESSION['company_id'])){
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            } else {
+                return redirect()->route("login2");
+            }
+        }
+
         $request->validate([
             'file' => 'required|file|mimes:txt,pdf,doc,docx,md|max:10240', // 10MB max
             'title' => 'required|string|max:255',
@@ -29,17 +53,22 @@ class DocumentController extends Controller
         try {
             $file = $request->file('file');
             $content = $this->extractTextFromFile($file);
-            
+
             if (empty($content)) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Could not extract text from file'
-                ], 400);
+                $error = 'Could not extract text from file';
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => $error
+                    ], 400);
+                } else {
+                    return redirect()->back()->with('error', $error);
+                }
             }
 
             // Generate embedding for the content
             $embedding = $this->aiService->embed($content);
-            
+
             // Save to database
             $document = DB::table('ai_documents')->insertGetId([
                 'title' => $request->title,
@@ -53,11 +82,16 @@ class DocumentController extends Controller
                 'updated_at' => now(),
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Document uploaded and processed successfully',
-                'document_id' => $document
-            ]);
+            $message = 'Document uploaded and processed successfully';
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'document_id' => $document
+                ]);
+            } else {
+                return redirect()->back()->with('success', $message);
+            }
 
         } catch (\Exception $e) {
             Log::error('Document upload error', [
@@ -65,15 +99,25 @@ class DocumentController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to process document'
-            ], 500);
+            $error = 'Failed to process document';
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $error
+                ], 500);
+            } else {
+                return redirect()->back()->with('error', $error);
+            }
         }
     }
 
     public function list()
     {
+        session_start();
+        if (!isset($_SESSION['company_id'])){
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         try {
             $documents = DB::table('ai_documents')
                 ->select(['id', 'title', 'category', 'description', 'file_name', 'file_size', 'created_at'])
@@ -95,6 +139,11 @@ class DocumentController extends Controller
 
     public function delete($id)
     {
+        session_start();
+        if (!isset($_SESSION['company_id'])){
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         try {
             $deleted = DB::table('ai_documents')->where('id', $id)->delete();
             

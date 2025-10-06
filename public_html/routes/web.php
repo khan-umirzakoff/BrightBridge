@@ -49,7 +49,8 @@ Route::match(['GET', 'POST'], '/jobedit2/{id}', [IndexController::class, 'jobedi
 Route::match(['GET', 'POST'], '/jobdelete2/{id}', [IndexController::class, 'jobdelete2'])->name('jobdelete2');
 
 // AI Document Management Routes
-Route::prefix('admin/ai-documents')->middleware('auth')->group(function() {
+Route::prefix('admin/ai-documents')->group(function() {
+    Route::get('/', [DocumentController::class, 'index'])->name('ai-documents.index');
     Route::post('/upload', [DocumentController::class, 'upload'])->name('ai-documents.upload');
     Route::get('/list', [DocumentController::class, 'list'])->name('ai-documents.list');
     Route::delete('/{id}', [DocumentController::class, 'delete'])->name('ai-documents.delete');
@@ -107,4 +108,11 @@ Route::prefix('admin')->group(function() {
     Route::match(['GET', 'POST'], '/decline-job/{id}', [$admin, 'declinejob'])->name('decline-job');
     Route::match(['GET', 'POST'], '/approve-job/{id}', [$admin, 'approvejob'])->name('approve-job');
     Route::match(['GET','POST'], '/users/', [$admin, 'users'])->name('users');
+
+    // AI Knowledge Management Routes
+    Route::match(['GET','POST'], '/ai-knowledge', [App\Http\Controllers\admin\AIKnowledgeController::class, 'index'])->name('ai-knowledge.index');
+    Route::post('/ai-knowledge/store', [App\Http\Controllers\admin\AIKnowledgeController::class, 'store'])->name('ai-knowledge.store');
+    Route::match(['GET','POST'], '/ai-knowledge/update/{id}', [App\Http\Controllers\admin\AIKnowledgeController::class, 'update'])->name('ai-knowledge.update');
+    Route::match(['GET','POST'], '/ai-knowledge/destroy/{id}', [App\Http\Controllers\admin\AIKnowledgeController::class, 'destroy'])->name('ai-knowledge.delete');
+    Route::post('/ai-knowledge/seed-default', [App\Http\Controllers\admin\AIKnowledgeController::class, 'seedDefault'])->name('ai-knowledge.seed-default');
 });

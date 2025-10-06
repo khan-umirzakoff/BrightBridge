@@ -1,0 +1,8 @@
+- [x] Add session authentication checks to AIKnowledgeController methods
+- [x] Add routes for AIKnowledgeController in web.php admin group
+- [x] Remove middleware('auth') from ai-documents routes and add session checks to DocumentController
+- [x] Verify the ai_knowledge.blade.php view has correct form actions
+- [x] Add index method and route for ai-documents admin page
+- [x] Modify upload method to handle web requests
+- [x] Create ai_documents.blade.php view
+- [x] Fix chat widget images to prevent JS errors

@@ -18,15 +18,25 @@ class AIKnowledgeController extends Controller
     }
     public function index()
     {
+        session_start();
+        if (!isset($_SESSION['company_id'])){
+            return redirect()->route("login2");
+        }
+
         $knowledge = AiKnowledge::orderBy('category')
             ->orderBy('priority', 'desc')
             ->paginate(20);
-            
+
         return view('admin.pages.ai_knowledge', compact('knowledge'));
     }
 
     public function store(Request $request)
     {
+        session_start();
+        if (!isset($_SESSION['company_id'])){
+            return redirect()->route("login2");
+        }
+
         $request->validate([
             'category' => 'required|string|max:50',
             'key' => 'required|string|max:100',
@@ -52,6 +62,11 @@ class AIKnowledgeController extends Controller
 
     public function update(Request $request, $id)
     {
+        session_start();
+        if (!isset($_SESSION['company_id'])){
+            return redirect()->route("login2");
+        }
+
         $knowledge = AiKnowledge::findOrFail($id);
         
         $request->validate([
@@ -81,12 +96,22 @@ class AIKnowledgeController extends Controller
 
     public function destroy($id)
     {
+        session_start();
+        if (!isset($_SESSION['company_id'])){
+            return redirect()->route("login2");
+        }
+
         AiKnowledge::findOrFail($id)->delete();
         return redirect()->back()->with('success', 'Ma\'lumot o\'chirildi');
     }
 
     public function seedDefault()
     {
+        session_start();
+        if (!isset($_SESSION['company_id'])){
+            return redirect()->route("login2");
+        }
+
         $defaultKnowledge = [
             [
                 'category' => 'contact',
