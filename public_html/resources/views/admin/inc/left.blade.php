@@ -64,6 +64,13 @@
                     </a>
                 </li>
 
+                <li class="nav-item">
+                    <a href="{{route('ai-documents.list')}}" class="nav-link">
+                        <i class="fas fa-file-alt nav-icon"></i>
+                        <p>AI Hujjatlar</p>
+                    </a>
+                </li>
+
 
             </ul>
         </nav>

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CVController;
 use App\Http\Controllers\IndexController;
+use App\Http\Controllers\DocumentController;
 
 
 
@@ -46,6 +47,13 @@ Route::match(['GET', 'POST'], '/contact/submit', [IndexController::class, 'submi
 Route::match(['GET', 'POST'], '/filter', [IndexController::class, 'filter'])->name('filter');
 Route::match(['GET', 'POST'], '/jobedit2/{id}', [IndexController::class, 'jobedit2'])->name('jobedit2');
 Route::match(['GET', 'POST'], '/jobdelete2/{id}', [IndexController::class, 'jobdelete2'])->name('jobdelete2');
+
+// AI Document Management Routes
+Route::prefix('admin/ai-documents')->middleware('auth')->group(function() {
+    Route::post('/upload', [DocumentController::class, 'upload'])->name('ai-documents.upload');
+    Route::get('/list', [DocumentController::class, 'list'])->name('ai-documents.list');
+    Route::delete('/{id}', [DocumentController::class, 'delete'])->name('ai-documents.delete');
+});
 
 // Admin Routes
 Route::prefix('admin')->group(function() {

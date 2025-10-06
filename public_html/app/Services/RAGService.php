@@ -61,7 +61,13 @@ class RAGService
             }
         }
 
-        // 6. Umumiy statistika
+        // 6. Custom Documents (AI Knowledge Base)
+        $documentContext = $this->searchDocuments($messageLower);
+        if (!empty($documentContext)) {
+            $context[] = $documentContext;
+        }
+
+        // 7. Umumiy statistika
         $statsContext = $this->getStatsContext();
         if (!empty($statsContext)) {
             $context[] = $statsContext;
@@ -397,5 +403,36 @@ class RAGService
         } catch (\Exception $e) {
             return '';
         }
+    }
+
+    protected function searchDocuments(string $query): string
+    {
+        try {
+            $queryEmbedding = $this->aiService->embed($query);
+            
+            $documents = DB::table('ai_documents')->whereNotNull('embedding')->get();
+            $results = $this->calculateSimilarity($documents, $queryEmbedding);
+            
+            if (!empty($results)) {
+                $context = "## Tegishli Hujjatlar:\n\n";
+                foreach ($results as $r) {
+                    if ($r['similarity'] > 0.6) {
+                        $context .= "**{$r['item']->title}**\n";
+                        if (!empty($r['item']->category)) {
+                            $context .= "- Kategoriya: {$r['item']->category}\n";
+                        }
+                        if (!empty($r['item']->description)) {
+                            $context .= "- Tavsif: {$r['item']->description}\n";
+                        }
+                        $context .= "- Mazmun: " . mb_substr(strip_tags($r['item']->content ?? ''), 0, 300) . "...\n\n";
+                    }
+                }
+                return $context;
+            }
+        } catch (\Exception $e) {
+            Log::error('Document search error', ['error' => $e->getMessage()]);
+        }
+        
+        return '';
     }
 }

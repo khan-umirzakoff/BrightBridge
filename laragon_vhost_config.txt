@@ -1,0 +1,16 @@
+# Laragon Apache Virtual Host Configuration
+# Edit this in Laragon → Apache → sites-enabled → auto.brightbridge.local.conf
+
+<VirtualHost *:80>
+    DocumentRoot "C:/Users/khan/Desktop/BrightBridge/public_html/public"
+    ServerName brightbridge.local
+    ServerAlias *.brightbridge.local
+    
+    <Directory "C:/Users/khan/Desktop/BrightBridge/public_html/public">
+        AllowOverride All
+        Require all granted
+    </Directory>
+    
+    ErrorLog "logs/brightbridge.local-error.log"
+    CustomLog "logs/brightbridge.local-access.log" common
+</VirtualHost>
