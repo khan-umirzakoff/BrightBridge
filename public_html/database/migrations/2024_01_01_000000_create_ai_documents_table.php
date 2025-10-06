@@ -14,7 +14,7 @@ class CreateAiDocumentsTable extends Migration
     public function up()
     {
         Schema::create('ai_documents', function (Blueprint $table) {
-            $table->id();
+            $table->increments('id');
             $table->string('title');
             $table->string('category')->nullable();
             $table->text('description')->nullable();
@@ -23,9 +23,8 @@ class CreateAiDocumentsTable extends Migration
             $table->string('file_name')->nullable();
             $table->integer('file_size')->nullable();
             $table->timestamps();
-            
+
             $table->index(['category']);
-            $table->fullText(['title', 'content']);
         });
     }
 

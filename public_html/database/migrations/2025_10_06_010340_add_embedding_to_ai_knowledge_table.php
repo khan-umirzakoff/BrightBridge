@@ -14,7 +14,7 @@ class AddEmbeddingToAiKnowledgeTable extends Migration
     public function up()
     {
         Schema::table('ai_knowledge', function (Blueprint $table) {
-            //
+            $table->json('embedding')->nullable();
         });
     }
 
@@ -26,7 +26,7 @@ class AddEmbeddingToAiKnowledgeTable extends Migration
     public function down()
     {
         Schema::table('ai_knowledge', function (Blueprint $table) {
-            //
+            $table->dropColumn('embedding');
         });
     }
 }

@@ -6,3 +6,5 @@
 - [x] Modify upload method to handle web requests
 - [x] Create ai_documents.blade.php view
 - [x] Fix chat widget images to prevent JS errors
+- [x] Fix admin menu links to point to UI pages instead of API
+- [x] Fix ai_knowledge migration to add embedding column
