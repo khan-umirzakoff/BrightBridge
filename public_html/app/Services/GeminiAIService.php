@@ -267,31 +267,38 @@ class GeminiAIService implements AIService
 
     public function chatWithImage(string $prompt, string $imageBase64, array $history = []): string
     {
+        return $this->chatWithImages($prompt, [$imageBase64], $history);
+    }
+
+    public function chatWithImages(string $prompt, array $images, array $history = []): string
+    {
         $url = "{$this->baseUrl}/models/{$this->model}:generateContent?key={$this->apiKey}";
-        
+
         $contents = [];
-        
+
         foreach ($history as $message) {
             $contents[] = [
                 'role' => $message['role'] ?? 'user',
                 'parts' => [['text' => $message['text']]]
             ];
         }
-        
+
         // Rasm va text (text ixtiyoriy)
         $parts = [];
-        
+
         if (!empty($prompt)) {
             $parts[] = ['text' => $prompt];
         }
-        
-        $parts[] = [
-            'inlineData' => [
-                'mimeType' => 'image/jpeg',
-                'data' => $imageBase64
-            ]
-        ];
-        
+
+        foreach ($images as $imageBase64) {
+            $parts[] = [
+                'inlineData' => [
+                    'mimeType' => 'image/jpeg',
+                    'data' => $imageBase64
+                ]
+            ];
+        }
+
         $contents[] = [
             'role' => 'user',
             'parts' => $parts

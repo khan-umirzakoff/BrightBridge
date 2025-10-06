@@ -136,28 +136,36 @@ class OpenAIService implements AIService
 
     public function chatWithImage(string $prompt, string $imageBase64, array $history = []): string
     {
+        return $this->chatWithImages($prompt, [$imageBase64], $history);
+    }
+
+    public function chatWithImages(string $prompt, array $images, array $history = []): string
+    {
         $url = "{$this->baseUrl}/chat/completions";
-        
+
         $messages = [];
-        
+
         foreach ($history as $message) {
             $messages[] = [
                 'role' => $message['role'] === 'model' ? 'assistant' : 'user',
                 'content' => $message['text']
             ];
         }
-        
+
+        $content = [['type' => 'text', 'text' => $prompt]];
+
+        foreach ($images as $imageBase64) {
+            $content[] = [
+                'type' => 'image_url',
+                'image_url' => [
+                    'url' => "data:image/jpeg;base64,{$imageBase64}"
+                ]
+            ];
+        }
+
         $messages[] = [
             'role' => 'user',
-            'content' => [
-                ['type' => 'text', 'text' => $prompt],
-                [
-                    'type' => 'image_url',
-                    'image_url' => [
-                        'url' => "data:image/jpeg;base64,{$imageBase64}"
-                    ]
-                ]
-            ]
+            'content' => $content
         ];
 
         try {

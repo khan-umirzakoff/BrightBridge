@@ -26,11 +26,12 @@ class AIChatController extends Controller
             'history.*.role' => 'required_with:history|in:user,model',
             'history.*.text' => 'required_with:history|string',
             'stream' => 'nullable|boolean',
-            'image' => 'nullable|string',
+            'images' => 'nullable|array',
+            'images.*' => 'string',
         ]);
 
         // Matn yoki rasm bo'lishi kerak
-        if (empty($request->message) && empty($request->image)) {
+        if (empty($request->message) && empty($request->images)) {
             return response()->json([
                 'success' => false,
                 'error' => 'Matn yoki rasm yuborish kerak',
@@ -85,14 +86,14 @@ class AIChatController extends Controller
     {
         $message = $request->input('message');
         $history = $request->input('history', []);
-        $imageBase64 = $request->input('image');
+        $images = $request->input('images', []);
 
-        return response()->stream(function () use ($message, $history, $imageBase64) {
+        return response()->stream(function () use ($message, $history, $images) {
             try {
                 // AI ga so'rov (rasmli yoki rasmsiz)
-                if ($imageBase64) {
-                    Log::info('Chat with image');
-                    $fullResponse = $this->aiService->chatWithImage($message, $imageBase64, $history);
+                if (!empty($images)) {
+                    Log::info('Chat with images', ['count' => count($images)]);
+                    $fullResponse = $this->aiService->chatWithImages($message, $images, $history);
                 } else {
                     $fullResponse = $this->aiService->chat($message, $history);
                 }

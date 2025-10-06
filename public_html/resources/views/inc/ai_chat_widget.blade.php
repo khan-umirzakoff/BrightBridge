@@ -45,7 +45,8 @@
         </div>
 
         <div id="chat-input">
-            <input type="file" id="chat-image-input" accept="image/*" style="display:none;">
+            <div id="image-previews" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;"></div>
+            <input type="file" id="chat-image-input" accept="image/*" multiple style="display:none;">
             <button id="chat-image-button" aria-label="Rasm yuborish" title="Rasm yuklash">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -59,6 +60,11 @@
             </button>
         </div>
     </div>
+</div>
+
+<!-- Toast bildirishnoma -->
+<div id="chat-toast" style="position:fixed;top:20px;right:20px;background:#333;color:#fff;padding:12px 16px;border-radius:8px;font-size:14px;z-index:10000;display:none;max-width:300px;word-wrap:break-word;">
+    <span id="toast-message"></span>
 </div>
 
 <script>
@@ -132,27 +138,48 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             chatImageInput.addEventListener('change', (e) => {
-                if (e.target.files && e.target.files[0]) {
-                    const file = e.target.files[0];
-                    
-                    // Rasm preview - chat messages da ko'rsatish
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+
+                const existingPreviews = document.querySelectorAll('.image-preview-msg').length;
+                const totalFiles = existingPreviews + files.length;
+
+                if (totalFiles > 3) {
+                    showToast('Maksimal 3 ta rasm yuborish mumkin.');
+                    e.target.value = '';
+                    return;
+                }
+
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+
+                    // Fayl hajmini tekshirish (max 5MB)
+                    const maxSize = 5 * 1024 * 1024; // 5MB
+                    if (file.size > maxSize) {
+                        showToast('Rasm hajmi juda katta! Maksimal 5MB.');
+                        e.target.value = '';
+                        return;
+                    }
+
+                    // Rasm preview - input ustida kichik ko'rsatish
                     const reader = new FileReader();
                     reader.onload = (event) => {
-                        const imagePreview = document.createElement('div');
-                        imagePreview.className = 'user-message message image-preview-msg';
-                        imagePreview.id = 'temp-image-preview';
-                        imagePreview.innerHTML = `
-                            <div style="position:relative;display:inline-block;">
-                                <img src="${event.target.result}" style="max-width:200px;max-height:200px;border-radius:12px;display:block;">
-                                <button onclick="this.closest('.image-preview-msg').remove();document.getElementById('chat-image-input').value='';" 
-                                    style="position:absolute;top:-6px;right:-6px;background:#0d2d62;color:white;border:2px solid white;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:12px;line-height:1;box-shadow:0 2px 8px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;">×</button>
-                            </div>
+                        const imageContainer = document.getElementById('image-previews');
+                        const imageWrapper = document.createElement('div');
+                        imageWrapper.className = 'image-preview-wrapper';
+                        imageWrapper.innerHTML = `
+                            <img src="${event.target.result}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #ddd;">
+                            <button onclick="this.parentElement.remove(); updateSendButton();" 
+                                style="position:absolute;top:-5px;right:-5px;background:red;color:white;border:none;border-radius:50%;width:16px;height:16px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;">×</button>
                         `;
-                        chatMessages.appendChild(imagePreview);
-                        forceScroll();
+                        imageContainer.appendChild(imageWrapper);
+                        updateSendButton();
                     };
                     reader.readAsDataURL(file);
                 }
+
+                // Input tozalash
+                e.target.value = '';
             });
         }
     }
@@ -169,6 +196,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // Force scroll (xabar tugaganda)
     function forceScroll() {
         chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Toast bildirishnoma ko'rsatish
+    function showToast(message) {
+        const toast = document.getElementById('chat-toast');
+        const toastMessage = document.getElementById('toast-message');
+        toastMessage.textContent = message;
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
+    }
+
+    // Send button holatini yangilash
+    function updateSendButton() {
+        const imagePreviews = document.querySelectorAll('.image-preview-wrapper');
+        const hasImage = imagePreviews.length > 0;
+        const hasText = chatInputField.value.trim() !== '';
+        chatSendButton.disabled = !(hasText || hasImage);
     }
 
     // Chat history saqlash (LocalStorage dan yuklash)
@@ -193,18 +239,31 @@ document.addEventListener('DOMContentLoaded', function() {
             const saved = localStorage.getItem('jobcare_ai_history');
             if (saved) {
                 const history = JSON.parse(saved);
-                
+
                 // Eski xabarlarni UI ga qayta yuklash
                 setTimeout(() => {
                     history.forEach(msg => {
-                        const div = document.createElement('div');
-                        div.className = msg.role === 'user' ? 'user-message message' : 'bot-message message';
-                        div.innerHTML = msg.role === 'user' ? msg.text : formatMarkdown(msg.text);
-                        chatMessages.appendChild(div);
+                        if (msg.text || msg.images) {
+                            const textDiv = document.createElement('div');
+                            textDiv.className = msg.role === 'user' ? 'user-message message' : 'bot-message message';
+                            let content = '';
+                            if (msg.images && msg.images.length > 0) {
+                                content += '<div style="display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap;">';
+                                msg.images.forEach(imageBase64 => {
+                                    content += `<img src="data:image/jpeg;base64,${imageBase64}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #ddd;">`;
+                                });
+                                content += '</div>';
+                            }
+                            if (msg.text) {
+                                content += msg.role === 'user' ? msg.text : formatMarkdown(msg.text);
+                            }
+                            textDiv.innerHTML = content;
+                            chatMessages.appendChild(textDiv);
+                        }
                     });
                     chatMessages.scrollTop = chatMessages.scrollHeight;
                 }, 100);
-                
+
                 return history;
             }
         } catch (e) {
@@ -267,34 +326,54 @@ document.addEventListener('DOMContentLoaded', function() {
     // Xabar yuborish funksiyasi
     async function sendMessage() {
         const message = chatInputField.value.trim();
-        const imageFile = chatImageInput.files[0];
-        
-        if (message === '' && !imageFile) {
-            console.log('Empty message and no image');
+        const imagePreviews = document.querySelectorAll('.image-preview-wrapper');
+
+        if (message === '' && imagePreviews.length === 0) {
+            console.log('Empty message and no images');
             return;
         }
 
-        console.log('sendMessage called', { message, hasImage: !!imageFile });
-
-        // Rasm preview SAQLAB qolish (o'chirmaslik!)
-        // User message qo'shish
-        if (message) {
-            const userMessageDiv = document.createElement('div');
-            userMessageDiv.className = 'user-message message';
-            userMessageDiv.textContent = message;
-            chatMessages.appendChild(userMessageDiv);
+        // Rasm yuborish uchun matn majburiy
+        if (imagePreviews.length > 0 && message === '') {
+            showToast('Rasm yuborish uchun matn ham kiritish kerak.');
+            return;
         }
+
+        console.log('sendMessage called', { message, imageCount: imagePreviews.length });
+
+        // Rasm base64 larni olish
+        const images = [];
+        for (let preview of imagePreviews) {
+            const img = preview.querySelector('img');
+            if (img && img.src.startsWith('data:image/')) {
+                const base64 = img.src.split(',')[1];
+                images.push(base64);
+            }
+        }
+
+        // Preview larni o'chirish
+        imagePreviews.forEach(preview => preview.remove());
+
+        // User message qo'shish
+        const userMessageDiv = document.createElement('div');
+        userMessageDiv.className = 'user-message message';
+        let content = '';
+        if (images.length > 0) {
+            content += '<div style="display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap;">';
+            images.forEach(imageBase64 => {
+                content += `<img src="data:image/jpeg;base64,${imageBase64}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #ddd;">`;
+            });
+            content += '</div>';
+        }
+        content += message;
+        userMessageDiv.innerHTML = content;
+        chatMessages.appendChild(userMessageDiv);
 
         // Input maydonini tozalash va disable qilish
         chatInputField.value = '';
         chatInputField.disabled = true;
         chatSendButton.disabled = true;
         chatImageButton.disabled = true;
-        
-        // Image input tozalash (rasm yuborilgandan keyin)
-        if (imageFile) {
-            chatImageInput.value = '';
-        }
 
         // Xabarlar oynasini pastga surish
         smartScroll();
@@ -309,23 +388,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // History ga user xabarini qo'shish
         chatHistory.push({
             role: 'user',
-            text: message
+            text: message,
+            images: images
         });
         saveChatHistory();
 
-        // Rasm base64 ni olish
-        let imageBase64 = null;
-        if (imageFile) {
-            const reader = new FileReader();
-            imageBase64 = await new Promise((resolve) => {
-                reader.onload = (e) => resolve(e.target.result.split(',')[1]);
-                reader.readAsDataURL(imageFile);
-            });
-        }
-
         try {
             // Backend API ga so'rov yuborish (streaming)
-            console.log('Sending request to API...', { message, hasImage: !!imageBase64 });
+            console.log('Sending request to API...', { message, imageCount: images.length });
             
             const response = await fetch('/api/ai/chat', {
                 method: 'POST',
@@ -339,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     message: message,
                     history: chatHistory.slice(-10),
                     stream: true,
-                    image: imageBase64
+                    images: images
                 })
             });
             
@@ -405,10 +475,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 saveChatHistory();
                                 forceScroll();
                                 scrollCounter = 0;
-                                
-                                // Rasm preview o'chirish (javob tugagandan keyin)
-                                const tempPreview = document.getElementById('temp-image-preview');
-                                if (tempPreview) tempPreview.remove();
                             }
                             
                             if (data.error) {
@@ -432,24 +498,22 @@ document.addEventListener('DOMContentLoaded', function() {
             errorDiv.className = 'bot-message message error-message';
             errorDiv.textContent = 'Kechirasiz, xatolik yuz berdi. Iltimos, qayta urinib ko\'ring.';
             chatMessages.appendChild(errorDiv);
-            
-            // Rasm preview o'chirish (xato bo'lsa ham)
-            const tempPreview = document.getElementById('temp-image-preview');
-            if (tempPreview) tempPreview.remove();
         } finally {
             // Input maydonini qayta yoqish
             chatInputField.disabled = false;
             chatSendButton.disabled = false;
             chatImageButton.disabled = false;
             chatInputField.focus();
-            
+
             // Xabarlar oynasini pastga surish
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
     }
 
-    // Enter tugmasi bosilganda xabar yuborish
+    // Input maydonida o'zgarish bo'lganda send button yangilanishi
     if (chatInputField) {
+        chatInputField.addEventListener('input', updateSendButton);
+
         chatInputField.addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
