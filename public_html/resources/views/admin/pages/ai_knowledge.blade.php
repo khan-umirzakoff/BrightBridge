@@ -39,7 +39,7 @@
             <div class="col-lg-12">
                 <div class="card card-primary">
                     <div class="card-header">
-                        <h3 class="card-title"><i class="fas fa-robot"></i> AI ga Yangi Bilim Qo'shish</h3>
+                        <h3 class="card-title"><i class="fas fa-star"></i> AI Muhim Ma'lumotlar</h3>
                     </div>
                     <form method="POST" action="{{ route('ai-knowledge.store') }}">
                         @csrf
@@ -51,16 +51,14 @@
                                     <small class="form-text text-muted">Bu ma'lumotning sarlavhasi.</small>
                                 </div>
                                 <div class="col-md-6 form-group">
-                                    <label for="category">🗂️ Kategoriya</label>
-                                    <select name="category" id="category" class="form-control" required>
-                                        <option value="contact" {{ old('category') == 'contact' ? 'selected' : '' }}>Kontakt (Telefon, Manzil, Email)</option>
-                                        <option value="faq" {{ old('category') == 'faq' ? 'selected' : '' }}>Tez-tez so'raladigan savollar</option>
-                                        <option value="service" {{ old('category') == 'service' ? 'selected' : '' }}>Xizmatlar</option>
-                                        <option value="about" {{ old('category') == 'about' ? 'selected' : '' }}>Platforma haqida</option>
-                                        <option value="pricing" {{ old('category') == 'pricing' ? 'selected' : '' }}>Narxlar</option>
-                                        <option value="general" {{ old('category') == 'general' ? 'selected' : '' }}>Umumiy</option>
-                                    </select>
-                                    <small class="form-text text-muted">Ma'lumot turini tanlang.</small>
+                                    <label for="category">🗂️ Kategoriya (Tanlang yoki yangi yozing)</label>
+                                    <input list="category-list" name="category" id="category" class="form-control" value="{{ old('category') }}" required>
+                                    <datalist id="category-list">
+                                        @foreach($categories as $category)
+                                            <option value="{{ $category }}">
+                                        @endforeach
+                                    </datalist>
+                                    <small class="form-text text-muted">Mavjud kategoriyani tanlang yoki yangisini yozing.</small>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -143,15 +141,8 @@
                                                     <input type="text" name="key" id="key{{ $item->id }}" class="form-control" value="{{ $item->key }}" required>
                                                 </div>
                                                 <div class="col-md-6 form-group">
-                                                    <label for="category{{ $item->id }}">🗂️ Kategoriya</label>
-                                                    <select name="category" id="category{{ $item->id }}" class="form-control" required>
-                                                        <option value="contact" {{ $item->category == 'contact' ? 'selected' : '' }}>Kontakt</option>
-                                                        <option value="faq" {{ $item->category == 'faq' ? 'selected' : '' }}>Tez-tez so'raladigan savollar</option>
-                                                        <option value="service" {{ $item->category == 'service' ? 'selected' : '' }}>Xizmatlar</option>
-                                                        <option value="about" {{ $item->category == 'about' ? 'selected' : '' }}>Platforma haqida</option>
-                                                        <option value="pricing" {{ $item->category == 'pricing' ? 'selected' : '' }}>Narxlar</option>
-                                                        <option value="general" {{ $item->category == 'general' ? 'selected' : '' }}>Umumiy</option>
-                                                    </select>
+                                                    <label for="category_edit{{ $item->id }}">🗂️ Kategoriya</label>
+                                                    <input list="category-list" name="category" id="category_edit{{ $item->id }}" class="form-control" value="{{ $item->category }}" required>
                                                 </div>
                                             </div>
                                             <div class="form-group">

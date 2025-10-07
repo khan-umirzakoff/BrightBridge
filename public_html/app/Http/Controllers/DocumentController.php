@@ -30,7 +30,9 @@ class DocumentController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        return view('admin.pages.ai_documents', compact('documents'));
+        $categories = DB::table('ai_documents')->whereNotNull('category')->where('category', '!=', '')->select('category')->distinct()->pluck('category');
+
+        return view('admin.pages.ai_documents', compact('documents', 'categories'));
     }
 
     public function upload(Request $request)
@@ -70,7 +72,7 @@ class DocumentController extends Controller
             // Save to database without embedding
             $document = DB::table('ai_documents')->insertGetId([
                 'title' => $request->title,
-                'category' => $request->category,
+                'category' => $request->category ?? 'general', // Default to general if empty
                 'description' => $request->description,
                 'content' => $content,
                 'embedding' => null,

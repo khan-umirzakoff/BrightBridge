@@ -66,8 +66,8 @@
 
                 <li class="nav-item">
                     <a href="{{route('ai-knowledge.index')}}" class="nav-link">
-                        <i class="fas fa-brain nav-icon"></i>
-                        <p>AI Bilimlar</p>
+                        <i class="fas fa-star nav-icon"></i>
+                        <p>AI Muhim Ma'lumotlar</p>
                     </a>
                 </li>
 

@@ -27,7 +27,9 @@ class AIKnowledgeController extends Controller
             ->orderBy('priority', 'desc')
             ->paginate(20);
 
-        return view('admin.pages.ai_knowledge', compact('knowledge'));
+        $categories = AiKnowledge::select('category')->distinct()->pluck('category');
+
+        return view('admin.pages.ai_knowledge', compact('knowledge', 'categories'));
     }
 
     public function store(Request $request)
