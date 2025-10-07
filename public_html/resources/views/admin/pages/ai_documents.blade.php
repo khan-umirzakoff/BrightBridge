@@ -117,7 +117,7 @@
                             <td>{{ $doc->category }}</td>
                             <td>{{ $doc->file_name }}</td>
                             <td>{{ number_format($doc->file_size / 1024, 1) }} KB</td>
-                            <td>{{ $doc->embedding ? 'Ha' : 'Yo\'q' }}</td>
+                            <td>@if($doc->embedding) <span style="color: green; font-size: 20px;">●</span> @else <span style="color: red; font-size: 20px;">●</span> @endif</td>
                             <td>{{ date('d.m.Y H:i', strtotime($doc->created_at)) }}</td>
                             <td>
                                 <button class="btn btn-sm btn-danger" onclick="deleteDocument({{ $doc->id }})">

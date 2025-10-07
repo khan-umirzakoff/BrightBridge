@@ -39,6 +39,7 @@
                                 <th>Info</th>
                                 <th>YouTube</th>
                                 <th>Category</th>
+                                <th>Embed</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -56,6 +57,7 @@
                                     <td>{{ $item->info }}</td>
                                     <td>{{ $item->youtube }}</td>
                                     <td>{{ $category->title ?? 'No Category' }}</td>
+                                    <td>@if($item->embedding) <span style="color: green; font-size: 20px;">●</span> @else <span style="color: red; font-size: 20px;">●</span> @endif</td>
                                     <td>
                                         <!-- Edit and Delete buttons in the same row -->
                                         <a href="{{route('editnews',['id'=>$item->id])}}" class="btn btn-warning">Edit</a>

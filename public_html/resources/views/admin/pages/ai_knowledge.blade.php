@@ -99,6 +99,7 @@
                             <th>Kalit</th>
                             <th>Qiymat</th>
                             <th>Muhimlik</th>
+                            <th>Embed</th>
                             <th>Sana</th>
                             <th>Amallar</th>
                         </tr>
@@ -110,6 +111,7 @@
                             <td><strong>{{ $item->key }}</strong><br><small class="text-muted">{{ $item->description }}</small></td>
                             <td><div style="white-space: pre-wrap; font-size: 14px;">{{ $item->value }}</div></td>
                             <td><span class="badge badge-warning">{{ $item->priority }}</span></td>
+                            <td>@if($item->embedding) <span style="color: green; font-size: 20px;">●</span> @else <span style="color: red; font-size: 20px;">●</span> @endif</td>
                             <td>{{ $item->created_at->format('d.m.Y') }}</td>
                             <td>
                                 <button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#editModal{{ $item->id }}">
@@ -172,7 +174,7 @@
                         </div>
                         @empty
                         <tr>
-                            <td colspan="6" class="text-center" style="padding: 50px;">
+                            <td colspan="7" class="text-center" style="padding: 50px;">
                                 <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 15px;"></i>
                                 <p class="text-muted">Hali ma'lumot yo'q. Yuqoridagi formani to'ldirib, yangi bilim qo'shing.</p>
                             </td>

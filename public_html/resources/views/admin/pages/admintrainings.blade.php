@@ -32,10 +32,11 @@
                     <table class="table table-bordered">
                         <thead>
                             <tr>
-                                
+
                                 <th>Id</th>
                                 <th>Title</th>
                                 <th>YouTube</th>
+                                <th>Embed</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -63,6 +64,7 @@
         <p>No video available</p>
     @endif
 </td>
+                                    <td>@if($item->embedding) <span style="color: green; font-size: 20px;">●</span> @else <span style="color: red; font-size: 20px;">●</span> @endif</td>
 
                                     <td>
                                         <!-- Edit and Delete buttons in the same row -->

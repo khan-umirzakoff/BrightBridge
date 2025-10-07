@@ -45,6 +45,7 @@
                                 <th>Salary</th>
                                 <th>Posted Date</th>
                                 <th>Category</th>
+                                <th>Embed</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -131,6 +132,7 @@
                                     <td>{{ $job->salary }}</td>
                                     <td>{{ $job->date }}</td>
                                     <td>{{$category->title}}</td>
+                                    <td>@if($job->embedding) <span style="color: green; font-size: 20px;">●</span> @else <span style="color: red; font-size: 20px;">●</span> @endif</td>
 
                                     <td>
                                         <!-- Edit and Delete buttons in the same row -->
