@@ -450,14 +450,68 @@ class RAGService
         return '';
     }
 
+    private function searchDirectFacts(string $query): array
+    {
+        $queryLower = mb_strtolower($query);
+        $keywords = ['telefon', 'nomer', 'raqam', 'manzil', 'adres', 'kontakt', 'bog\'lanish', 'email', 'pochta'];
+
+        $foundKeywords = false;
+        foreach ($keywords as $keyword) {
+            if (strpos($queryLower, $keyword) !== false) {
+                $foundKeywords = true;
+                break;
+            }
+        }
+
+        if (!$foundKeywords) {
+            return [];
+        }
+
+        $facts = DB::table('ai_knowledge')
+            ->where('is_active', true)
+            ->where(function ($q) {
+                $q->where('category', 'contact')
+                  ->orWhere('priority', '>', 1);
+            })
+            ->orderBy('priority', 'desc')
+            ->get();
+
+        if ($facts->isEmpty()) {
+            return [];
+        }
+
+        $knowledge = [];
+        foreach ($facts as $fact) {
+            $knowledge[] = [
+                'content' => "**{$fact->key}**: {$fact->value}",
+                'similarity' => 1.0, // Highest priority
+                'source' => 'direct_fact',
+                'id' => "fact_{$fact->id}"
+            ];
+        }
+
+        Log::info('Direct facts found', ['count' => count($knowledge)]);
+        return $knowledge;
+    }
+
     public function retrieve(string $query): array
     {
-        $knowledge = [];
+        $allResults = [];
+        $processedIds = [];
 
+        // 1. Hybrid Search: Direct Fact Search (Keyword-based)
+        $directFacts = $this->searchDirectFacts($query);
+        if (!empty($directFacts)) {
+            foreach ($directFacts as $fact) {
+                $allResults[] = $fact;
+                $processedIds[] = $fact['id'];
+            }
+        }
+
+        // 2. Hybrid Search: Semantic Search (Embedding-based)
         try {
             $queryEmbedding = $this->aiService->embed($query);
 
-            // Search all tables with embeddings
             $tables = [
                 'ai_documents' => ['title', 'category', 'description', 'content'],
                 'ai_knowledge' => ['category', 'key', 'description', 'value'],
@@ -467,8 +521,6 @@ class RAGService
                 'newscategory' => ['name', 'description'],
             ];
 
-            $allResults = [];
-
             foreach ($tables as $table => $fields) {
                 try {
                     $items = DB::table($table)->whereNotNull('embedding')->get();
@@ -477,29 +529,32 @@ class RAGService
                     $results = $this->calculateSimilarity($items, $queryEmbedding);
 
                     foreach ($results as $r) {
-                        if ($r['similarity'] > 0.4) {
+                        $itemId = "{$table}_{$r['item']->id}";
+                        // Avoid duplicates from direct search
+                        if ($r['similarity'] > 0.4 && !in_array($itemId, $processedIds)) {
                             $content = $this->formatItemContent($r['item'], $table, $fields);
                             $allResults[] = [
                                 'content' => $content,
                                 'similarity' => $r['similarity'],
-                                'table' => $table
+                                'source' => $table,
+                                'id' => $itemId
                             ];
+                            $processedIds[] = $itemId;
                         }
                     }
                 } catch (\Exception $e) {
                     Log::error("Error searching table {$table}", ['error' => $e->getMessage()]);
                 }
             }
-
-            // Sort by similarity
-            usort($allResults, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
-
-            // Limit to top 5 most relevant items
-            $knowledge = array_slice($allResults, 0, 5);
-
         } catch (\Exception $e) {
-            Log::error('RAG retrieve error', ['error' => $e->getMessage()]);
+            Log::error('RAG retrieve (semantic part) error', ['error' => $e->getMessage()]);
         }
+
+        // Sort by similarity (direct facts will be on top with 1.0)
+        usort($allResults, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
+
+        // Limit to top 7 most relevant items
+        $knowledge = array_slice($allResults, 0, 7);
 
         return $knowledge;
     }
