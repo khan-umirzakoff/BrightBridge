@@ -65,16 +65,23 @@
                 </li>
 
                 <li class="nav-item">
+                    <a href="{{route('ai-settings.index')}}" class="nav-link">
+                        <i class="fas fa-cog nav-icon"></i>
+                        <p>AI Settings</p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
                     <a href="{{route('ai-knowledge.index')}}" class="nav-link">
-                        <i class="fas fa-star nav-icon"></i>
-                        <p>AI Knowledge Boshqarish</p>
+                        <i class="fas fa-database nav-icon"></i>
+                        <p>AI Knowledge Base</p>
                     </a>
                 </li>
 
                 <li class="nav-item">
                     <a href="{{route('ai-documents.index')}}" class="nav-link">
                         <i class="fas fa-file-alt nav-icon"></i>
-                        <p>AI Hujjatlar</p>
+                        <p>AI Documents</p>
                     </a>
                 </li>
 

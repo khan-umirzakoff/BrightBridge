@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\AiSetting;
 use App\Contracts\AIService;
 use App\Services\GeminiAIService;
 use App\Services\OpenAIService;
@@ -12,7 +13,13 @@ class AIServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->bind(AIService::class, function ($app) {
-            $provider = strtolower(env('AI_PROVIDER', 'gemini'));
+            // Try to get provider from database, fallback to .env
+            try {
+                $provider = AiSetting::getProvider();
+            } catch (\Exception $e) {
+                // Fallback to .env if database not available (e.g., during migration)
+                $provider = strtolower(env('AI_PROVIDER', 'gemini'));
+            }
 
             switch ($provider) {
                 case 'openai':

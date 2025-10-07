@@ -21,12 +21,21 @@ class GeminiAIService implements AIService
             'timeout' => 30,
             'http_errors' => false,
         ]);
-        $this->apiKey = env('GEMINI_API_KEY');
-        $this->model = env('GEMINI_MODEL', 'gemini-2.5-flash');
-        $this->embeddingModel = env('GEMINI_EMBEDDING_MODEL', 'text-embedding-004');
-        
+
+        // Try to get settings from database, fallback to .env
+        try {
+            $this->apiKey = \App\AiSetting::get('gemini_api_key') ?: env('GEMINI_API_KEY');
+            $this->model = \App\AiSetting::get('gemini_model') ?: env('GEMINI_MODEL', 'gemini-2.0-flash-exp');
+            $this->embeddingModel = \App\AiSetting::get('gemini_embedding_model') ?: env('GEMINI_EMBEDDING_MODEL', 'gemini-embedding-001');
+        } catch (\Exception $e) {
+            // Fallback to .env if database not available
+            $this->apiKey = env('GEMINI_API_KEY');
+            $this->model = env('GEMINI_MODEL', 'gemini-2.0-flash-exp');
+            $this->embeddingModel = env('GEMINI_EMBEDDING_MODEL', 'gemini-embedding-001');
+        }
+
         if (empty($this->apiKey)) {
-            throw new \RuntimeException('GEMINI_API_KEY is not configured in .env file');
+            throw new \RuntimeException('Gemini API Key is not configured. Please configure it in Admin > AI Settings.');
         }
     }
 

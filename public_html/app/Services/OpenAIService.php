@@ -21,12 +21,21 @@ class OpenAIService implements AIService
             'timeout' => 30,
             'http_errors' => false,
         ]);
-        $this->apiKey = env('OPENAI_API_KEY');
-        $this->model = env('OPENAI_MODEL', 'gpt-4o-mini');
-        $this->embeddingModel = env('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small');
-        
+
+        // Try to get settings from database, fallback to .env
+        try {
+            $this->apiKey = \App\AiSetting::get('openai_api_key') ?: env('OPENAI_API_KEY');
+            $this->model = \App\AiSetting::get('openai_model') ?: env('OPENAI_MODEL', 'gpt-4o');
+            $this->embeddingModel = \App\AiSetting::get('openai_embedding_model') ?: env('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small');
+        } catch (\Exception $e) {
+            // Fallback to .env if database not available
+            $this->apiKey = env('OPENAI_API_KEY');
+            $this->model = env('OPENAI_MODEL', 'gpt-4o');
+            $this->embeddingModel = env('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small');
+        }
+
         if (empty($this->apiKey)) {
-            throw new \RuntimeException('OPENAI_API_KEY is not configured in .env file');
+            throw new \RuntimeException('OpenAI API Key is not configured. Please configure it in Admin > AI Settings.');
         }
     }
 
