@@ -344,13 +344,27 @@ class RAGService
     protected function calculateSimilarity($items, $queryEmbedding): array
     {
         $results = [];
-        
+
         foreach ($items as $item) {
-            $itemEmbedding = json_decode($item->embedding, true);
-            if (!is_array($itemEmbedding)) continue;
-            
-            $similarity = $this->cosineSimilarity($queryEmbedding, $itemEmbedding);
-            $results[] = ['item' => $item, 'similarity' => $similarity];
+            $itemEmbeddings = json_decode($item->embedding, true);
+            if (!is_array($itemEmbeddings)) continue;
+
+            $maxSimilarity = 0.0;
+
+            // If it's an array of embeddings (chunks), find the max similarity
+            if (is_array($itemEmbeddings) && isset($itemEmbeddings[0]) && is_array($itemEmbeddings[0])) {
+                foreach ($itemEmbeddings as $emb) {
+                    if (is_array($emb)) {
+                        $sim = $this->cosineSimilarity($queryEmbedding, $emb);
+                        $maxSimilarity = max($maxSimilarity, $sim);
+                    }
+                }
+            } else {
+                // Single embedding
+                $maxSimilarity = $this->cosineSimilarity($queryEmbedding, $itemEmbeddings);
+            }
+
+            $results[] = ['item' => $item, 'similarity' => $maxSimilarity];
         }
 
         usort($results, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
@@ -409,10 +423,10 @@ class RAGService
     {
         try {
             $queryEmbedding = $this->aiService->embed($query);
-            
+
             $documents = DB::table('ai_documents')->whereNotNull('embedding')->get();
             $results = $this->calculateSimilarity($documents, $queryEmbedding);
-            
+
             if (!empty($results)) {
                 $context = "## Tegishli Hujjatlar:\n\n";
                 foreach ($results as $r) {
@@ -432,7 +446,109 @@ class RAGService
         } catch (\Exception $e) {
             Log::error('Document search error', ['error' => $e->getMessage()]);
         }
-        
+
         return '';
+    }
+
+    public function retrieve(string $query): array
+    {
+        $knowledge = [];
+
+        try {
+            $queryEmbedding = $this->aiService->embed($query);
+
+            // Search all tables with embeddings
+            $tables = [
+                'ai_documents' => ['title', 'category', 'description', 'content'],
+                'ai_knowledge' => ['category', 'key', 'description', 'value'],
+                'jobs' => ['title', 'company', 'location', 'type', 'info'],
+                'news' => ['title', 'desc'],
+                'trainings' => ['title', 'desc'],
+                'newscategory' => ['name', 'description'],
+            ];
+
+            $allResults = [];
+
+            foreach ($tables as $table => $fields) {
+                try {
+                    $items = DB::table($table)->whereNotNull('embedding')->get();
+                    if ($items->isEmpty()) continue;
+
+                    $results = $this->calculateSimilarity($items, $queryEmbedding);
+
+                    foreach ($results as $r) {
+                        if ($r['similarity'] > 0.4) {
+                            $content = $this->formatItemContent($r['item'], $table, $fields);
+                            $allResults[] = [
+                                'content' => $content,
+                                'similarity' => $r['similarity'],
+                                'table' => $table
+                            ];
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Error searching table {$table}", ['error' => $e->getMessage()]);
+                }
+            }
+
+            // Sort by similarity
+            usort($allResults, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
+
+            // Limit to top 5 most relevant items
+            $knowledge = array_slice($allResults, 0, 5);
+
+        } catch (\Exception $e) {
+            Log::error('RAG retrieve error', ['error' => $e->getMessage()]);
+        }
+
+        return $knowledge;
+    }
+
+    protected function formatItemContent($item, string $table, array $fields): string
+    {
+        $content = "";
+
+        switch ($table) {
+            case 'ai_documents':
+                $content = "**{$item->title}**\n";
+                if (!empty($item->category)) $content .= "- Kategoriya: {$item->category}\n";
+                if (!empty($item->description)) $content .= "- Tavsif: {$item->description}\n";
+                $content .= "- Mazmun: " . mb_substr(strip_tags($item->content ?? ''), 0, 50000) . "...";
+                break;
+
+            case 'ai_knowledge':
+                $content = "**{$item->key}** ({$item->category})\n";
+                if (!empty($item->description)) $content .= "- Tavsif: {$item->description}\n";
+                $content .= "- Qiymat: {$item->value}";
+                break;
+
+            case 'jobs':
+                $content = "**{$item->title}**\n";
+                $content .= "- Kompaniya: {$item->company}\n";
+                $content .= "- Joylashuv: {$item->location}\n";
+                $content .= "- Turi: {$item->type}\n";
+                if (!empty($item->info)) $content .= "- Ma'lumot: " . mb_substr(strip_tags($item->info), 0, 1000) . "...";
+                break;
+
+            case 'news':
+                $content = "**{$item->title}**\n";
+                $content .= "- Yangilik: " . mb_substr(strip_tags($item->desc ?? ''), 0, 2000) . "...";
+                break;
+
+            case 'trainings':
+                $content = "**{$item->title}**\n";
+                $content .= "- Trening: " . mb_substr(strip_tags($item->desc ?? ''), 0, 2000) . "...";
+                break;
+
+            case 'newscategory':
+                $content = "**{$item->name}**\n";
+                if (!empty($item->description)) $content .= "- Tavsif: {$item->description}";
+                break;
+
+            default:
+                $content = json_encode($item);
+        }
+
+        return $content;
     }
 }

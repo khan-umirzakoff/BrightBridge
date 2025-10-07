@@ -12,7 +12,9 @@
         "fideloper/proxy": "^4.0",
         "guzzlehttp/guzzle": "6.5",
         "laravel/framework": "5.8.*",
-        "setasign/fpdf": "^1.8"
+        "phpoffice/phpword": "^1.4",
+        "setasign/fpdf": "^1.8",
+        "smalot/pdfparser": "^2.12"
     },
     "require-dev": {
         "beyondcode/laravel-dump-server": "^1.3",

@@ -53,6 +53,7 @@ Route::prefix('admin/ai-documents')->group(function() {
     Route::get('/', [DocumentController::class, 'index'])->name('ai-documents.index');
     Route::post('/upload', [DocumentController::class, 'upload'])->name('ai-documents.upload');
     Route::get('/list', [DocumentController::class, 'list'])->name('ai-documents.list');
+    Route::get('/progress/{id}', [DocumentController::class, 'progress'])->name('ai-documents.progress');
     Route::delete('/{id}', [DocumentController::class, 'delete'])->name('ai-documents.delete');
 });
 

@@ -1,10 +1,9 @@
-- [x] Add session authentication checks to AIKnowledgeController methods
-- [x] Add routes for AIKnowledgeController in web.php admin group
-- [x] Remove middleware('auth') from ai-documents routes and add session checks to DocumentController
-- [x] Verify the ai_knowledge.blade.php view has correct form actions
-- [x] Add index method and route for ai-documents admin page
-- [x] Modify upload method to handle web requests
-- [x] Create ai_documents.blade.php view
-- [x] Fix chat widget images to prevent JS errors
-- [x] Fix admin menu links to point to UI pages instead of API
-- [x] Fix ai_knowledge migration to add embedding column
+- [x] Replace progress bar with loading overlay in ai_documents.blade.php
+- [x] Update JS to show loading on upload, poll until embedding done, then show success and reload
+- [x] Make loading appear immediately on button press and larger modal
+- [x] Prevent modal from closing on backdrop click or escape
+- [x] Improve AI RAG prompt to better use uploaded documents
+- [x] Lower similarity threshold for document retrieval
+- [x] Maximize content length sent to AI (50000 chars per doc, 150000 total)
+- [x] Improve semantic search granularity (2000 char chunks, max 20 chunks)
+- [x] Make AI aware of all website data (search all tables with embeddings)

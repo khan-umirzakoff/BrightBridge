@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use App\Contracts\AIService;
+use App\Jobs\ProcessDocumentEmbedding;
 
 class DocumentController extends Controller
 {
@@ -25,7 +26,7 @@ class DocumentController extends Controller
         }
 
         $documents = DB::table('ai_documents')
-            ->select(['id', 'title', 'category', 'description', 'file_name', 'file_size', 'created_at'])
+            ->select(['id', 'title', 'category', 'description', 'file_name', 'file_size', 'embedding', 'created_at'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
@@ -66,23 +67,23 @@ class DocumentController extends Controller
                 }
             }
 
-            // Generate embedding for the content
-            $embedding = $this->aiService->embed($content);
-
-            // Save to database
+            // Save to database without embedding
             $document = DB::table('ai_documents')->insertGetId([
                 'title' => $request->title,
                 'category' => $request->category,
                 'description' => $request->description,
                 'content' => $content,
-                'embedding' => json_encode($embedding),
+                'embedding' => null,
                 'file_name' => $file->getClientOriginalName(),
                 'file_size' => $file->getSize(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            $message = 'Document uploaded and processed successfully';
+            // Dispatch job to process embeddings
+            ProcessDocumentEmbedding::dispatch($document);
+
+            $message = 'Document uploaded successfully. Processing embeddings in background.';
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
@@ -137,6 +138,37 @@ class DocumentController extends Controller
         }
     }
 
+    public function progress($id)
+    {
+        session_start();
+        if (!isset($_SESSION['company_id'])){
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $progress = \Illuminate\Support\Facades\Cache::get('document_progress_' . $id, null);
+
+        if ($progress) {
+            return response()->json([
+                'success' => true,
+                'progress' => $progress
+            ]);
+        } else {
+            // Check if embedding is done
+            $document = DB::table('ai_documents')->where('id', $id)->select('embedding')->first();
+            if ($document && $document->embedding) {
+                return response()->json([
+                    'success' => true,
+                    'progress' => ['progress' => 100, 'chunks_processed' => 0, 'total_chunks' => 0]
+                ]);
+            } else {
+                return response()->json([
+                    'success' => true,
+                    'progress' => ['progress' => 0, 'chunks_processed' => 0, 'total_chunks' => 0]
+                ]);
+            }
+        }
+    }
+
     public function delete($id)
     {
         session_start();
@@ -178,20 +210,32 @@ class DocumentController extends Controller
                 case 'md':
                     $content = file_get_contents($file->getPathname());
                     break;
-                    
+
                 case 'pdf':
-                    // For PDF parsing, you might want to use a library like smalot/pdfparser
-                    // For now, return empty and suggest manual text input
-                    $content = '';
+                    $parser = new \Smalot\PdfParser\Parser();
+                    $pdf = $parser->parseFile($file->getPathname());
+                    $content = $pdf->getText();
                     break;
-                    
+
                 case 'doc':
                 case 'docx':
-                    // For Word documents, you might want to use PhpOffice/PhpWord
-                    // For now, return empty and suggest manual text input
+                    $phpWord = \PhpOffice\PhpWord\IOFactory::load($file->getPathname());
                     $content = '';
+                    foreach ($phpWord->getSections() as $section) {
+                        foreach ($section->getElements() as $element) {
+                            if ($element instanceof \PhpOffice\PhpWord\Element\TextRun) {
+                                foreach ($element->getElements() as $textElement) {
+                                    if ($textElement instanceof \PhpOffice\PhpWord\Element\Text) {
+                                        $content .= $textElement->getText() . ' ';
+                                    }
+                                }
+                            } elseif ($element instanceof \PhpOffice\PhpWord\Element\Text) {
+                                $content .= $element->getText() . ' ';
+                            }
+                        }
+                    }
                     break;
-                    
+
                 default:
                     $content = '';
             }
@@ -199,7 +243,7 @@ class DocumentController extends Controller
             // Clean and normalize text
             $content = trim($content);
             $content = preg_replace('/\s+/', ' ', $content); // Normalize whitespace
-            
+
             return $content;
 
         } catch (\Exception $e) {

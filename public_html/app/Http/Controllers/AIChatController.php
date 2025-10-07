@@ -50,7 +50,24 @@ class AIChatController extends Controller
 
             Log::info('AI Chat request', ['message' => $message, 'stream' => $stream]);
 
-            $response = $this->aiService->chat($message, $history);
+            // Retrieve relevant knowledge using RAG
+            $enhancedMessage = $message;
+            try {
+                $relevantKnowledge = $this->ragService->retrieve($message);
+                if (!empty($relevantKnowledge)) {
+                    $knowledgeText = implode("\n\n", array_map(function($item) {
+                        return $item['content'];
+                    }, $relevantKnowledge));
+                    // Limit knowledge text to prevent too long messages
+                    $knowledgeText = substr($knowledgeText, 0, 150000);
+                    $enhancedMessage = "Quyidagi foydali ma'lumotlarni asos qilib, foydalanuvchi savoliga aniq va to'g'ri javob bering. Agar ma'lumotlar savolga tegishli bo'lmasa, umumiy bilimlaringizdan foydalaning.\n\nFoydali ma'lumotlar:\n" . $knowledgeText . "\n\nFoydalanuvchi savoli: " . $message;
+                }
+            } catch (\Exception $e) {
+                Log::error('RAG retrieve error', ['error' => $e->getMessage()]);
+                // Proceed without knowledge
+            }
+
+            $response = $this->aiService->chat($enhancedMessage, $history);
 
             return response()->json([
                 'success' => true,
@@ -94,13 +111,30 @@ class AIChatController extends Controller
                 echo "data: " . json_encode(['thinking' => true]) . "\n\n";
                 ob_flush();
                 flush();
-                
+
+                // Retrieve relevant knowledge using RAG
+                $enhancedMessage = $message;
+                try {
+                    $relevantKnowledge = $this->ragService->retrieve($message);
+                    if (!empty($relevantKnowledge)) {
+                        $knowledgeText = implode("\n\n", array_map(function($item) {
+                            return $item['content'];
+                        }, $relevantKnowledge));
+                        // Limit knowledge text to prevent too long messages
+                        $knowledgeText = substr($knowledgeText, 0, 150000);
+                        $enhancedMessage = "Quyidagi foydali ma'lumotlarni asos qilib, foydalanuvchi savoliga aniq va to'g'ri javob bering. Agar ma'lumotlar savolga tegishli bo'lmasa, umumiy bilimlaringizdan foydalaning.\n\nFoydali ma'lumotlar:\n" . $knowledgeText . "\n\nFoydalanuvchi savoli: " . $message;
+                    }
+                } catch (\Exception $e) {
+                    Log::error('RAG retrieve error in stream', ['error' => $e->getMessage()]);
+                    // Proceed without knowledge
+                }
+
                 // AI ga so'rov (rasmli yoki rasmsiz)
                 if (!empty($images)) {
                     Log::info('Chat with images', ['count' => count($images)]);
-                    $result = $this->aiService->chatWithImagesAndThinking($message, $images, $history);
+                    $result = $this->aiService->chatWithImagesAndThinking($enhancedMessage, $images, $history);
                 } else {
-                    $result = $this->aiService->chatWithThinking($message, $history);
+                    $result = $this->aiService->chatWithThinking($enhancedMessage, $history);
                 }
                 
                 // Check if AI actually used thinking

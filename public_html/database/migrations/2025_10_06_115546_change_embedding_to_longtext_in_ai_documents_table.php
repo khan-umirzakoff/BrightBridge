@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class AddEmbeddingToAiKnowledgeTable extends Migration
+class ChangeEmbeddingToLongtextInAiDocumentsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,8 @@ class AddEmbeddingToAiKnowledgeTable extends Migration
      */
     public function up()
     {
-        Schema::table('ai_knowledge', function (Blueprint $table) {
-            $table->text('embedding')->nullable();
+        Schema::table('ai_documents', function (Blueprint $table) {
+            //
         });
     }
 
@@ -25,8 +25,8 @@ class AddEmbeddingToAiKnowledgeTable extends Migration
      */
     public function down()
     {
-        Schema::table('ai_knowledge', function (Blueprint $table) {
-            $table->dropColumn('embedding');
+        Schema::table('ai_documents', function (Blueprint $table) {
+            //
         });
     }
 }
