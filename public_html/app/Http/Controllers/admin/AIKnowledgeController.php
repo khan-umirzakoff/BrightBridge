@@ -6,7 +6,9 @@ use App\AiKnowledge;
 use App\Contracts\AIService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class AIKnowledgeController extends Controller
 {
@@ -29,7 +31,31 @@ class AIKnowledgeController extends Controller
 
         $categories = AiKnowledge::select('category')->distinct()->pluck('category');
 
-        return view('admin.pages.ai_knowledge', compact('knowledge', 'categories'));
+        // Embedding statistikasi
+        $stats = [
+            'ai_knowledge' => [
+                'total' => AiKnowledge::count(),
+                'with_embedding' => AiKnowledge::whereNotNull('embedding')->count(),
+            ],
+            'jobs' => [
+                'total' => \App\Jobs::count(),
+                'with_embedding' => \App\Jobs::whereNotNull('embedding')->count(),
+            ],
+            'news' => [
+                'total' => \App\News::count(),
+                'with_embedding' => \App\News::whereNotNull('embedding')->count(),
+            ],
+            'trainings' => [
+                'total' => \App\Trainings::count(),
+                'with_embedding' => \App\Trainings::whereNotNull('embedding')->count(),
+            ],
+            'ai_documents' => [
+                'total' => DB::table('ai_documents')->count(),
+                'with_embedding' => DB::table('ai_documents')->whereNotNull('embedding')->count(),
+            ],
+        ];
+
+        return view('admin.pages.ai_knowledge', compact('knowledge', 'categories', 'stats'));
     }
 
     public function store(Request $request)
@@ -127,33 +153,23 @@ class AIKnowledgeController extends Controller
             return redirect()->route("login2");
         }
 
+        // Faqat ai_knowledge uchun bulk embedding
         $knowledges = AiKnowledge::whereNull('embedding')->orWhere('embedding', '')->get();
-        $successCount = 0;
-        $errorCount = 0;
 
-        foreach ($knowledges as $knowledge) {
-            try {
-                $text = "Kategoriya: {$knowledge->category}. " .
-                        "Kalit: {$knowledge->key}. " .
-                        "Qiymat: {$knowledge->value}. " .
-                        "Izoh: {$knowledge->description}";
-
-                $embedding = $this->aiService->embed($text);
-
-                $knowledge->update(['embedding' => json_encode($embedding)]);
-                $successCount++;
-
-            } catch (\Exception $e) {
-                Log::error('Bulk embedding generation failed', [
-                    'id' => $knowledge->id,
-                    'error' => $e->getMessage()
-                ]);
-                $errorCount++;
-            }
+        if ($knowledges->isEmpty()) {
+            return redirect()->back()->with('info', 'Embedding yaratish uchun ma\'lumot yo\'q.');
         }
 
-        $message = "Embedding yaratish tugadi. Muvaffaqiyat: {$successCount}, Xatolik: {$errorCount}";
-        return redirect()->back()->with('success', $message);
+        // Bulk embedding boshlandi flagini o'rnatish
+        Cache::put('bulk_knowledge_embedding_in_progress', true, now()->addMinutes(60)); // 1 soat
+
+        // Har bir ma'lumot uchun job yaratish
+        foreach ($knowledges as $knowledge) {
+            \App\Jobs\ProcessKnowledgeEmbedding::dispatch($knowledge);
+        }
+
+        $count = $knowledges->count();
+        return redirect()->back()->with('success', "{$count} ta ma'lumot uchun embedding yaratish boshlandi. Jarayon fon rejimida davom etadi.");
     }
 
     public function seedDefault()

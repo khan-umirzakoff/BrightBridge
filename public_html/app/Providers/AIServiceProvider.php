@@ -13,13 +13,13 @@ class AIServiceProvider extends ServiceProvider
     {
         $this->app->bind(AIService::class, function ($app) {
             $provider = strtolower(env('AI_PROVIDER', 'gemini'));
-            
+
             switch ($provider) {
                 case 'openai':
                 case 'chatgpt':
                 case 'gpt':
                     return new OpenAIService();
-                    
+
                 case 'gemini':
                 case 'google':
                 default:

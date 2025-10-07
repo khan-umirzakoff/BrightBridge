@@ -35,14 +35,57 @@
 
             <br>
 
+            <!-- Embedding Statistics -->
+            <div class="col-lg-12 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-chart-bar"></i> Embedding Statistikalari</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            @foreach($stats as $table => $stat)
+                            <div class="col-md-2 col-sm-6 mb-3">
+                                <div class="text-center">
+                                    <h6 class="text-uppercase font-weight-bold">{{ ucfirst(str_replace('_', ' ', $table)) }}</h6>
+                                    <div class="d-flex justify-content-center">
+                                        <span class="badge badge-success mr-1">{{ $stat['with_embedding'] }}</span>
+                                        <span class="text-muted">/</span>
+                                        <span class="badge badge-secondary ml-1">{{ $stat['total'] }}</span>
+                                    </div>
+                                    <small class="text-muted">
+                                        @if($stat['total'] > 0)
+                                            {{ round(($stat['with_embedding'] / $stat['total']) * 100) }}% embedding
+                                        @else
+                                            0% embedding
+                                        @endif
+                                    </small>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <br>
+
             <!-- Bulk Actions -->
             <div class="col-lg-12 mb-3">
-                <form method="POST" action="{{ route('ai-knowledge.generate-all-embeddings') }}" style="display:inline" onsubmit="return confirm('Barcha embedding yo\'q ma\'lumotlar uchun embedding yaratilsinmi?')">
+                @if(Cache::get('bulk_knowledge_embedding_in_progress'))
+                <div class="alert alert-info">
+                    <i class="fas fa-spinner fa-spin"></i> Bulk embedding jarayonida. Iltimos kuting...
+                </div>
+                <button type="button" class="btn btn-warning" disabled>
+                    <i class="fas fa-robot"></i> Barcha Embeddinglarni Yaratish (Jarayonda)
+                </button>
+                @else
+                <form method="POST" action="{{ route('ai-knowledge.generate-all-embeddings') }}" style="display:inline" onsubmit="return confirm('Barcha embedding yo\'q ma\'lumotlar uchun embedding yaratilsinmi? Bu fon rejimida bajariladi.')">
                     @csrf
                     <button type="submit" class="btn btn-warning">
                         <i class="fas fa-robot"></i> Barcha Embeddinglarni Yaratish
                     </button>
                 </form>
+                @endif
                 <form method="POST" action="{{ route('ai-knowledge.seed-default') }}" style="display:inline; margin-left: 10px;" onsubmit="return confirm('Standart ma\'lumotlar yuklansinmi?')">
                     @csrf
                     <button type="submit" class="btn btn-info">
@@ -129,13 +172,13 @@
                             <td><strong>{{ $item->key }}</strong><br><small class="text-muted">{{ $item->description }}</small></td>
                             <td><div style="white-space: pre-wrap; font-size: 14px;">{{ $item->value }}</div></td>
                             <td><span class="badge badge-warning">{{ $item->priority }}</span></td>
-                            <td>@if($item->embedding) <span class="badge badge-success">Embedding bor</span> @else <span class="badge badge-danger">Embedding yo'q</span> @endif</td>
+                            <td>@if($item->embedding && $item->embedding != '[]' && $item->embedding != '') <span class="badge badge-success">Embedding bor</span> @else <span class="badge badge-danger">Embedding yo'q</span> @endif</td>
                             <td>{{ $item->created_at->format('d.m.Y') }}</td>
                             <td>
                                 <button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#editModal{{ $item->id }}">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                @if(!$item->embedding)
+                                @if(!$item->embedding || $item->embedding == '[]' || $item->embedding == '')
                                 <form method="POST" action="{{ route('ai-knowledge.generate-embedding', $item->id) }}" style="display:inline" onsubmit="return confirm('Embedding yaratilsinmi?')">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-warning" title="Embedding yaratish">
