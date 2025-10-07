@@ -53,12 +53,7 @@ class ProcessDocumentEmbedding implements ShouldQueue
 
         foreach ($chunks as $index => $chunk) {
             if (trim($chunk)) {
-                try {
-                    $embeddings[] = $aiService->embed($chunk);
-                } catch (\Exception $e) {
-                    Log::error('Embedding error for chunk', ['chunk' => $index, 'error' => $e->getMessage()]);
-                    // Continue with next chunk
-                }
+                $embeddings[] = $this->retryEmbed($aiService, $chunk, $index);
             }
 
             // Update progress
@@ -81,5 +76,32 @@ class ProcessDocumentEmbedding implements ShouldQueue
 
         // Clear progress cache
         Cache::forget('document_progress_' . $this->documentId);
+    }
+
+    protected function retryEmbed($aiService, $chunk, $index)
+    {
+        $maxRetries = 3;
+        $retryDelay = 15; // seconds
+
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                return $aiService->embed($chunk);
+            } catch (\Exception $e) {
+                Log::warning("Embedding attempt {$attempt} failed for chunk {$index}", [
+                    'error' => $e->getMessage(),
+                    'attempt' => $attempt
+                ]);
+
+                if ($attempt < $maxRetries) {
+                    sleep($retryDelay);
+                } else {
+                    Log::error("Embedding failed after {$maxRetries} attempts for chunk {$index}", [
+                        'error' => $e->getMessage()
+                    ]);
+                    // Return empty array or skip
+                    return [];
+                }
+            }
+        }
     }
 }
