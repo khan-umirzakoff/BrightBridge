@@ -74,8 +74,8 @@
                                 <div id="drop-zone" class="text-center p-5 border border-dashed border-primary rounded" style="cursor: pointer; background-color: #f8f9fa;">
                                     <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
                                     <h5 class="text-primary">Faylni bu yerga torting yoki bosing</h5>
-                                    <p class="text-muted">Faqat txt, md, pdf, doc, docx fayllar. Maksimal 50MB.</p>
-                                    <input type="file" name="file" id="file-input" accept=".txt,.md,.pdf,.doc,.docx" required style="display: none;">
+                                    <p class="text-muted">Faqat txt, md, pdf, doc, docx, epub fayllar. Maksimal 100MB (Kitoblar uchun).</p>
+                                    <input type="file" name="file" id="file-input" accept=".txt,.md,.pdf,.doc,.docx,.epub" required style="display: none;">
                                 </div>
                                 <div id="file-info" class="mt-2" style="display: none;">
                                     <small class="text-success">Tanlangan fayl: <span id="file-name"></span> (<span id="file-size"></span>)</small>

@@ -47,7 +47,7 @@ class DocumentController extends Controller
         }
 
         $request->validate([
-            'file' => 'required|file|mimes:txt,pdf,doc,docx,md|max:51200', // 50MB max
+            'file' => 'required|file|mimes:txt,pdf,doc,docx,md,epub|max:102400', // 100MB max (for books)
             'title' => 'required|string|max:255',
             'category' => 'nullable|string|max:100',
             'description' => 'nullable|string|max:1000',
