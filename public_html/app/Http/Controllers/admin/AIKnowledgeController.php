@@ -363,20 +363,4 @@ class AIKnowledgeController extends Controller
 
         return redirect()->back()->with('success', 'Standart ma\'lumotlar yuklandi');
     }
-
-    public function updateSystemPrompt(Request $request)
-    {
-        session_start();
-        if (!isset($_SESSION['company_id'])){
-            return redirect()->route("login2");
-        }
-
-        $request->validate([
-            'system_prompt' => 'required|string',
-        ]);
-
-        AiSetting::setSystemPrompt($request->system_prompt);
-
-        return redirect()->back()->with('success', 'System prompt muvaffaqiyatli yangilandi');
-    }
 }

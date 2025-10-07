@@ -118,7 +118,6 @@ Route::prefix('admin')->group(function() {
     Route::post('/ai-knowledge/generate-embedding/{id}', [App\Http\Controllers\admin\AIKnowledgeController::class, 'generateEmbedding'])->name('ai-knowledge.generate-embedding');
     Route::post('/ai-knowledge/generate-all-embeddings', [App\Http\Controllers\admin\AIKnowledgeController::class, 'generateAllEmbeddings'])->name('ai-knowledge.generate-all-embeddings');
     Route::post('/ai-knowledge/seed-default', [App\Http\Controllers\admin\AIKnowledgeController::class, 'seedDefault'])->name('ai-knowledge.seed-default');
-    Route::post('/ai-knowledge/update-system-prompt', [App\Http\Controllers\admin\AIKnowledgeController::class, 'updateSystemPrompt'])->name('ai-knowledge.update-system-prompt');
 
     // AI Settings Routes
     Route::get('/ai-settings', [App\Http\Controllers\admin\AISettingsController::class, 'index'])->name('ai-settings.index');

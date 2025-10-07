@@ -162,30 +162,6 @@
 
             <br>
 
-            <!-- System Prompt Section -->
-            <div class="col-lg-12 mb-4">
-                <div class="card card-warning">
-                    <div class="card-header">
-                        <h3 class="card-title"><i class="fas fa-cogs"></i> AI System Prompt Sozlamalari</h3>
-                    </div>
-                    <form method="POST" action="{{ route('ai-knowledge.update-system-prompt') }}">
-                        @csrf
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label for="system_prompt">🤖 AI System Prompt</label>
-                                <textarea name="system_prompt" id="system_prompt" class="form-control" rows="6" placeholder="AI uchun system prompt kiriting..." required>{{ \App\AiSetting::getSystemPrompt() }}</textarea>
-                                <small class="form-text text-muted">Bu prompt AI ning umumiy xatti-harakatini belgilaydi. Masalan: "Siz JobCare platformasi AI assistantisiz. Oddiy suhbatda do'stona javob bering."</small>
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <button type="submit" class="btn btn-warning btn-lg">
-                                <i class="fas fa-save"></i> System Promptni Saqlash
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
             <!-- Knowledge Table -->
             <div class="col-lg-12 table-responsive">
                 <table class="table table-bordered table-striped">

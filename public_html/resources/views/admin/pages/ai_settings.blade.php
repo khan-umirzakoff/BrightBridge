@@ -234,24 +234,6 @@
                         This prompt defines how the AI assistant behaves. Be clear and specific about the role, tone, and capabilities.
                     </small>
                 </div>
-
-                <!-- Preset Prompts -->
-                <div class="card bg-light mt-3">
-                    <div class="card-body">
-                        <h6><i class="fas fa-lightbulb"></i> Quick Templates</h6>
-                        <div class="btn-group-vertical btn-group-sm w-100">
-                            <button type="button" class="btn btn-outline-secondary text-left mb-2" onclick="useTemplate('professional')">
-                                <i class="fas fa-briefcase"></i> Professional Assistant
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary text-left mb-2" onclick="useTemplate('friendly')">
-                                <i class="fas fa-smile"></i> Friendly & Helpful
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary text-left" onclick="useTemplate('expert')">
-                                <i class="fas fa-graduation-cap"></i> Expert Advisor
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -346,65 +328,6 @@ function testConnection(provider) {
         btn.innerHTML = originalHtml;
         alert('Connection test failed: ' + error.message);
     });
-}
-
-function useTemplate(type) {
-    const templates = {
-        professional: `You are a professional AI assistant for JobCare, a job search and recruitment platform in Uzbekistan.
-
-Your role:
-- Provide accurate, helpful information about jobs, careers, and the platform
-- Maintain a professional, courteous tone
-- Give clear, concise answers
-- Help users find relevant job opportunities
-- Assist with career-related questions
-
-Guidelines:
-- Always be respectful and professional
-- Provide factual information from the knowledge base
-- If you don't know something, admit it honestly
-- Focus on helping users achieve their job search goals`,
-
-        friendly: `You are a friendly and helpful AI assistant for JobCare platform.
-
-Your personality:
-- Warm, approachable, and enthusiastic
-- Patient and understanding
-- Encouraging and supportive
-
-Your goals:
-- Help job seekers find their dream jobs
-- Make the job search process easier and more enjoyable
-- Provide helpful career advice
-- Answer questions about the platform and services
-
-Communication style:
-- Use simple, clear language
-- Be positive and encouraging
-- Show empathy and understanding
-- Celebrate user successes`,
-
-        expert: `You are an expert career advisor and AI assistant for JobCare platform.
-
-Your expertise:
-- Deep knowledge of the job market in Uzbekistan
-- Career development and planning
-- Resume and interview preparation
-- Industry trends and insights
-
-Your approach:
-- Provide expert, evidence-based advice
-- Offer detailed, thoughtful responses
-- Share relevant examples and best practices
-- Guide users toward informed career decisions
-
-Your tone:
-- Knowledgeable yet accessible
-- Confident but not arrogant
-- Supportive and mentoring`
-    };
-
-    document.getElementById('system_prompt').value = templates[type];
 }
 </script>
 @endsection
