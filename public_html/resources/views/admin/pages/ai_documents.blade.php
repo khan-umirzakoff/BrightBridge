@@ -42,8 +42,16 @@
                                 <input type="text" name="title" class="form-control" placeholder="Masalan: Kompaniya qoidalari" required>
                             </div>
                             <div class="form-group">
-                                <label>Kategoriya:</label>
-                                <input type="text" name="category" class="form-control" placeholder="Masalan: HR, Marketing" value="general">
+                                <label>Kategoriya (Tanlang yoki yangi yozing):</label>
+                                <input list="category-list-docs" name="category" class="form-control" placeholder="Masalan: HR, Marketing" value="">
+                                <datalist id="category-list-docs">
+                                    @if(isset($categories))
+                                        @foreach($categories as $category)
+                                            <option value="{{ $category }}">
+                                        @endforeach
+                                    @endif
+                                </datalist>
+                                <small class="form-text text-muted">Mavjud kategoriyani tanlang yoki yangisini yozing.</small>
                             </div>
                             <div class="form-group">
                                 <label>Tavsif:</label>

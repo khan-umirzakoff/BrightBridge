@@ -22,33 +22,61 @@
                 </div>
             @endif
 
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+
             <br>
 
             <!-- Add Knowledge Form -->
             <div class="col-lg-12">
                 <div class="card card-primary">
                     <div class="card-header">
-                        <h3 class="card-title"><i class="fas fa-robot"></i> AI ga O'rgatish Uchun Ma'lumot Qo'shish</h3>
+                        <h3 class="card-title"><i class="fas fa-star"></i> AI Muhim Ma'lumotlar</h3>
                     </div>
                     <form method="POST" action="{{ route('ai-knowledge.store') }}">
                         @csrf
-                        <input type="hidden" name="category" value="general">
-                        <input type="hidden" name="key" value="knowledge">
                         <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label for="key">🏷️ Kalit (Qisqa nom)</label>
+                                    <input type="text" name="key" id="key" class="form-control" placeholder="Masalan: Kompaniya telefoni" value="{{ old('key') }}" required>
+                                    <small class="form-text text-muted">Bu ma'lumotning sarlavhasi.</small>
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label for="category">🗂️ Kategoriya (Tanlang yoki yangi yozing)</label>
+                                    <input list="category-list" name="category" id="category" class="form-control" value="{{ old('category') }}" required>
+                                    <datalist id="category-list">
+                                        @foreach($categories as $category)
+                                            <option value="{{ $category }}">
+                                        @endforeach
+                                    </datalist>
+                                    <small class="form-text text-muted">Mavjud kategoriyani tanlang yoki yangisini yozing.</small>
+                                </div>
+                            </div>
                             <div class="form-group">
-                                <label>💡 Ma'lumot matni (AI o'qiydi va eslab qoladi):</label>
-                                <textarea name="value" class="form-control" rows="12" placeholder="Masalan:
-
-📞 Telefon raqamimiz: +998 71 123 45 67
-⏰ Ish vaqti: Dushanba-Juma 9:00-18:00
-📧 Email: info@jobcare.uz
-📍 Manzil: Toshkent shahar, Amir Temur ko'chasi 123
-✨ Xizmatlar: Bepul ish e'lonlari, CV tahlil, intervyu tayyorlovi
-
-Qo'shimcha ma'lumotlar..." required></textarea>
-                                <small class="form-text text-muted">
-                                    ℹ️ AI shu matnni o'qiydi va foydalanuvchi savolariga javob berishda ishlatadi
-                                </small>
+                                <label for="value">📝 Qiymat (To'liq ma'lumot)</label>
+                                <textarea name="value" id="value" class="form-control" rows="4" placeholder="Masalan: +998 71 123 45 67" required>{{ old('value') }}</textarea>
+                                <small class="form-text text-muted">AI aynan shu matnni foydalanuvchiga ko'rsatadi.</small>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-8 form-group">
+                                    <label for="description">ℹ️ Izoh (Majburiy emas)</label>
+                                    <input type="text" name="description" id="description" class="form-control" placeholder="Masalan: Faqat ish vaqtida qo'ng'iroq qiling" value="{{ old('description') }}">
+                                    <small class="form-text text-muted">Bu ma'lumot haqida qo'shimcha eslatma (faqat siz uchun).</small>
+                                </div>
+                                <div class="col-md-4 form-group">
+                                    <label for="priority">⭐ Muhimlik (0-5)</label>
+                                    <input type="number" name="priority" id="priority" class="form-control" min="0" max="5" value="{{ old('priority', 0) }}">
+                                    <small class="form-text text-muted">Qancha yuqori bo'lsa, shuncha muhim.</small>
+                                </div>
                             </div>
                         </div>
                         <div class="card-footer">
@@ -64,28 +92,32 @@ Qo'shimcha ma'lumotlar..." required></textarea>
 
             <!-- Knowledge Table -->
             <div class="col-lg-12 table-responsive">
-                <table class="table table-bordered">
-                    <thead>
+                <table class="table table-bordered table-striped">
+                    <thead class="thead-dark">
                         <tr>
-                            <th width="75%">Ma'lumot</th>
-                            <th width="15%">Sana</th>
-                            <th width="10%">Amallar</th>
+                            <th>Kategoriya</th>
+                            <th>Kalit</th>
+                            <th>Qiymat</th>
+                            <th>Muhimlik</th>
+                            <th>Sana</th>
+                            <th>Amallar</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($knowledge as $item)
                         <tr>
+                            <td><span class="badge badge-info">{{ $item->category }}</span></td>
+                            <td><strong>{{ $item->key }}</strong><br><small class="text-muted">{{ $item->description }}</small></td>
+                            <td><div style="white-space: pre-wrap; font-size: 14px;">{{ $item->value }}</div></td>
+                            <td><span class="badge badge-warning">{{ $item->priority }}</span></td>
+                            <td>{{ $item->created_at->format('d.m.Y') }}</td>
                             <td>
-                                <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.6;">{{ $item->value }}</div>
-                            </td>
-                            <td>{{ $item->created_at->format('d.m.Y H:i') }}</td>
-                            <td>
-                                <button class="btn btn-sm btn-warning" data-toggle="modal" data-target="#editModal{{ $item->id }}">
+                                <button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#editModal{{ $item->id }}">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <form method="POST" action="{{ route('ai-knowledge.delete', $item->id) }}" style="display:inline">
+                                <form method="POST" action="{{ route('ai-knowledge.delete', $item->id) }}" style="display:inline" onsubmit="return confirm('O\'chirmoqchimisiz?')">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('O\'chirmoqchimisiz?')">
+                                    <button type="submit" class="btn btn-sm btn-danger">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
@@ -102,12 +134,30 @@ Qo'shimcha ma'lumotlar..." required></textarea>
                                     </div>
                                     <form method="POST" action="{{ route('ai-knowledge.update', $item->id) }}">
                                         @csrf
-                                        <input type="hidden" name="category" value="general">
-                                        <input type="hidden" name="key" value="knowledge">
                                         <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6 form-group">
+                                                    <label for="key{{ $item->id }}">🏷️ Kalit</label>
+                                                    <input type="text" name="key" id="key{{ $item->id }}" class="form-control" value="{{ $item->key }}" required>
+                                                </div>
+                                                <div class="col-md-6 form-group">
+                                                    <label for="category_edit{{ $item->id }}">🗂️ Kategoriya</label>
+                                                    <input list="category-list" name="category" id="category_edit{{ $item->id }}" class="form-control" value="{{ $item->category }}" required>
+                                                </div>
+                                            </div>
                                             <div class="form-group">
-                                                <label>Ma'lumot:</label>
-                                                <textarea name="value" class="form-control" rows="15" required>{{ $item->value }}</textarea>
+                                                <label for="value{{ $item->id }}">📝 Qiymat</label>
+                                                <textarea name="value" id="value{{ $item->id }}" class="form-control" rows="4" required>{{ $item->value }}</textarea>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-8 form-group">
+                                                    <label for="description{{ $item->id }}">ℹ️ Izoh</label>
+                                                    <input type="text" name="description" id="description{{ $item->id }}" class="form-control" value="{{ $item->description }}">
+                                                </div>
+                                                <div class="col-md-4 form-group">
+                                                    <label for="priority{{ $item->id }}">⭐ Muhimlik (0-5)</label>
+                                                    <input type="number" name="priority" id="priority{{ $item->id }}" class="form-control" min="0" max="5" value="{{ $item->priority ?? 0 }}">
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="modal-footer">
@@ -122,9 +172,9 @@ Qo'shimcha ma'lumotlar..." required></textarea>
                         </div>
                         @empty
                         <tr>
-                            <td colspan="3" class="text-center" style="padding: 50px;">
+                            <td colspan="6" class="text-center" style="padding: 50px;">
                                 <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 15px;"></i>
-                                <p class="text-muted">Hali ma'lumot yo'q. Yuqorida matn kiritib saqlang.</p>
+                                <p class="text-muted">Hali ma'lumot yo'q. Yuqoridagi formani to'ldirib, yangi bilim qo'shing.</p>
                             </td>
                         </tr>
                         @endforelse

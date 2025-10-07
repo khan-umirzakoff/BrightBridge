@@ -50,22 +50,8 @@ class AIChatController extends Controller
 
             Log::info('AI Chat request', ['message' => $message, 'stream' => $stream]);
 
-            // Retrieve relevant knowledge using RAG
-            $enhancedMessage = $message;
-            try {
-                $relevantKnowledge = $this->ragService->retrieve($message);
-                if (!empty($relevantKnowledge)) {
-                    $knowledgeText = implode("\n\n", array_map(function($item) {
-                        return $item['content'];
-                    }, $relevantKnowledge));
-                    // Limit knowledge text to prevent too long messages
-                    $knowledgeText = substr($knowledgeText, 0, 150000);
-                    $enhancedMessage = "Quyidagi foydali ma'lumotlarni asos qilib, foydalanuvchi savoliga aniq va to'g'ri javob bering. Agar ma'lumotlar savolga tegishli bo'lmasa, umumiy bilimlaringizdan foydalaning.\n\nFoydali ma'lumotlar:\n" . $knowledgeText . "\n\nFoydalanuvchi savoli: " . $message;
-                }
-            } catch (\Exception $e) {
-                Log::error('RAG retrieve error', ['error' => $e->getMessage()]);
-                // Proceed without knowledge
-            }
+            // Build enhanced prompt using Hybrid Search results
+            $enhancedMessage = $this->buildEnhancedPrompt($message);
 
             $response = $this->aiService->chat($enhancedMessage, $history);
 
@@ -112,22 +98,8 @@ class AIChatController extends Controller
                 ob_flush();
                 flush();
 
-                // Retrieve relevant knowledge using RAG
-                $enhancedMessage = $message;
-                try {
-                    $relevantKnowledge = $this->ragService->retrieve($message);
-                    if (!empty($relevantKnowledge)) {
-                        $knowledgeText = implode("\n\n", array_map(function($item) {
-                            return $item['content'];
-                        }, $relevantKnowledge));
-                        // Limit knowledge text to prevent too long messages
-                        $knowledgeText = substr($knowledgeText, 0, 150000);
-                        $enhancedMessage = "Quyidagi foydali ma'lumotlarni asos qilib, foydalanuvchi savoliga aniq va to'g'ri javob bering. Agar ma'lumotlar savolga tegishli bo'lmasa, umumiy bilimlaringizdan foydalaning.\n\nFoydali ma'lumotlar:\n" . $knowledgeText . "\n\nFoydalanuvchi savoli: " . $message;
-                    }
-                } catch (\Exception $e) {
-                    Log::error('RAG retrieve error in stream', ['error' => $e->getMessage()]);
-                    // Proceed without knowledge
-                }
+                // Build enhanced prompt using Hybrid Search results
+                $enhancedMessage = $this->buildEnhancedPrompt($message);
 
                 // AI ga so'rov (rasmli yoki rasmsiz)
                 if (!empty($images)) {
@@ -199,6 +171,60 @@ class AIChatController extends Controller
                 'success' => false,
                 'error' => 'Failed to generate embedding',
             ], 500);
+        }
+    }
+
+    private function buildEnhancedPrompt(string $userMessage): string
+    {
+        if (empty($userMessage)) {
+            return '';
+        }
+
+        try {
+            $relevantKnowledge = $this->ragService->retrieve($userMessage);
+
+            if (empty($relevantKnowledge)) {
+                return $userMessage; // Return original message if no knowledge found
+            }
+
+            $directFacts = [];
+            $otherKnowledge = [];
+
+            foreach ($relevantKnowledge as $item) {
+                // Ensure content exists and is a string
+                if (empty($item['content']) || !is_string($item['content'])) continue;
+
+                if (isset($item['source']) && $item['source'] === 'direct_fact') {
+                    $directFacts[] = $item['content'];
+                } else {
+                    $otherKnowledge[] = $item['content'];
+                }
+            }
+
+            $knowledgeText = "";
+
+            if (!empty($directFacts)) {
+                $knowledgeText .= "# Aniq Faktlar (Eng Muhim):\n" . implode("\n", $directFacts) . "\n\n";
+            }
+
+            if (!empty($otherKnowledge)) {
+                $knowledgeText .= "# Boshqa Foydali Ma'lumotlar:\n" . implode("\n\n", $otherKnowledge);
+            }
+
+            $knowledgeText = substr(trim($knowledgeText), 0, 150000);
+
+            if (empty($knowledgeText)) {
+                return $userMessage;
+            }
+
+            $promptTemplate = "Sen JobCare platformasi yordamchisisan. Quyidagi ma'lumotlarga asoslanib foydalanuvchining savoliga javob ber. '# Aniq Faktlar' bo'limidagi ma'lumotlarga eng yuqori ustuvorlik ber.\n\n%s\n\nFoydalanuvchi savoli: %s";
+
+            return sprintf($promptTemplate, $knowledgeText, $userMessage);
+
+        } catch (\Exception $e) {
+            Log::error('RAG retrieve or prompt build error', ['error' => $e->getMessage()]);
+            // Proceed without knowledge, so just return the original message
+            return $userMessage;
         }
     }
 }
