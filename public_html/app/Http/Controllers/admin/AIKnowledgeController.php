@@ -48,14 +48,6 @@ class AIKnowledgeController extends Controller
         ]);
 
         $data = $request->all();
-        
-        // Embedding yaratish
-        try {
-            $embedding = $this->aiService->embed($request->value);
-            $data['embedding'] = json_encode($embedding);
-        } catch (\Exception $e) {
-            Log::error('Embedding creation failed', ['error' => $e->getMessage()]);
-        }
 
         AiKnowledge::create($data);
 
@@ -80,16 +72,6 @@ class AIKnowledgeController extends Controller
         ]);
 
         $data = $request->all();
-        
-        // Embedding yangilash (agar value o'zgargan bo'lsa)
-        if ($knowledge->value !== $request->value) {
-            try {
-                $embedding = $this->aiService->embed($request->value);
-                $data['embedding'] = json_encode($embedding);
-            } catch (\Exception $e) {
-                Log::error('Embedding update failed', ['error' => $e->getMessage()]);
-            }
-        }
 
         $knowledge->update($data);
 
@@ -105,6 +87,73 @@ class AIKnowledgeController extends Controller
 
         AiKnowledge::findOrFail($id)->delete();
         return redirect()->back()->with('success', 'Ma\'lumot o\'chirildi');
+    }
+
+    public function generateEmbedding($id)
+    {
+        session_start();
+        if (!isset($_SESSION['company_id'])){
+            return redirect()->route("login2");
+        }
+
+        $knowledge = AiKnowledge::findOrFail($id);
+
+        try {
+            $text = "Kategoriya: {$knowledge->category}. " .
+                    "Kalit: {$knowledge->key}. " .
+                    "Qiymat: {$knowledge->value}. " .
+                    "Izoh: {$knowledge->description}";
+
+            $embedding = $this->aiService->embed($text);
+
+            $knowledge->update(['embedding' => json_encode($embedding)]);
+
+            return redirect()->back()->with('success', 'Embedding muvaffaqiyatli yaratildi');
+
+        } catch (\Exception $e) {
+            Log::error('Manual embedding generation failed', [
+                'id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->back()->with('error', 'Embedding yaratishda xatolik: ' . $e->getMessage());
+        }
+    }
+
+    public function generateAllEmbeddings()
+    {
+        session_start();
+        if (!isset($_SESSION['company_id'])){
+            return redirect()->route("login2");
+        }
+
+        $knowledges = AiKnowledge::whereNull('embedding')->orWhere('embedding', '')->get();
+        $successCount = 0;
+        $errorCount = 0;
+
+        foreach ($knowledges as $knowledge) {
+            try {
+                $text = "Kategoriya: {$knowledge->category}. " .
+                        "Kalit: {$knowledge->key}. " .
+                        "Qiymat: {$knowledge->value}. " .
+                        "Izoh: {$knowledge->description}";
+
+                $embedding = $this->aiService->embed($text);
+
+                $knowledge->update(['embedding' => json_encode($embedding)]);
+                $successCount++;
+
+            } catch (\Exception $e) {
+                Log::error('Bulk embedding generation failed', [
+                    'id' => $knowledge->id,
+                    'error' => $e->getMessage()
+                ]);
+                $errorCount++;
+            }
+        }
+
+        $message = "Embedding yaratish tugadi. Muvaffaqiyat: {$successCount}, Xatolik: {$errorCount}";
+        return redirect()->back()->with('success', $message);
     }
 
     public function seedDefault()

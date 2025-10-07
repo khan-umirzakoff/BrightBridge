@@ -35,6 +35,24 @@
 
             <br>
 
+            <!-- Bulk Actions -->
+            <div class="col-lg-12 mb-3">
+                <form method="POST" action="{{ route('ai-knowledge.generate-all-embeddings') }}" style="display:inline" onsubmit="return confirm('Barcha embedding yo\'q ma\'lumotlar uchun embedding yaratilsinmi?')">
+                    @csrf
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-robot"></i> Barcha Embeddinglarni Yaratish
+                    </button>
+                </form>
+                <form method="POST" action="{{ route('ai-knowledge.seed-default') }}" style="display:inline; margin-left: 10px;" onsubmit="return confirm('Standart ma\'lumotlar yuklansinmi?')">
+                    @csrf
+                    <button type="submit" class="btn btn-info">
+                        <i class="fas fa-seedling"></i> Standart Ma'lumotlarni Yuklash
+                    </button>
+                </form>
+            </div>
+
+            <br>
+
             <!-- Add Knowledge Form -->
             <div class="col-lg-12">
                 <div class="card card-primary">
@@ -111,12 +129,20 @@
                             <td><strong>{{ $item->key }}</strong><br><small class="text-muted">{{ $item->description }}</small></td>
                             <td><div style="white-space: pre-wrap; font-size: 14px;">{{ $item->value }}</div></td>
                             <td><span class="badge badge-warning">{{ $item->priority }}</span></td>
-                            <td>@if($item->embedding) <span style="color: green; font-size: 20px;">●</span> @else <span style="color: red; font-size: 20px;">●</span> @endif</td>
+                            <td>@if($item->embedding) <span class="badge badge-success">Embedding bor</span> @else <span class="badge badge-danger">Embedding yo'q</span> @endif</td>
                             <td>{{ $item->created_at->format('d.m.Y') }}</td>
                             <td>
                                 <button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#editModal{{ $item->id }}">
                                     <i class="fas fa-edit"></i>
                                 </button>
+                                @if(!$item->embedding)
+                                <form method="POST" action="{{ route('ai-knowledge.generate-embedding', $item->id) }}" style="display:inline" onsubmit="return confirm('Embedding yaratilsinmi?')">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-warning" title="Embedding yaratish">
+                                        <i class="fas fa-robot"></i>
+                                    </button>
+                                </form>
+                                @endif
                                 <form method="POST" action="{{ route('ai-knowledge.delete', $item->id) }}" style="display:inline" onsubmit="return confirm('O\'chirmoqchimisiz?')">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-danger">

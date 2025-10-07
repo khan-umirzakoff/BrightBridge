@@ -26,6 +26,18 @@
                 </div>
             @endif
 
+            <!-- Success Message for AJAX -->
+            <div id="ajax-success-message" class="alert alert-success alert-dismissible fade show" style="display: none;">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <span id="ajax-success-text"></span>
+            </div>
+
+            <!-- Error Message for AJAX -->
+            <div id="ajax-error-message" class="alert alert-danger alert-dismissible fade show" style="display: none;">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <span id="ajax-error-text"></span>
+            </div>
+
             <br>
 
             <!-- Upload Document Form -->
@@ -117,7 +129,7 @@
                             <td>{{ $doc->category }}</td>
                             <td>{{ $doc->file_name }}</td>
                             <td>{{ number_format($doc->file_size / 1024, 1) }} KB</td>
-                            <td>@if($doc->embedding) <span style="color: green; font-size: 20px;">●</span> @else <span style="color: red; font-size: 20px;">●</span> @endif</td>
+                            <td>@if($doc->embedding) <span class="badge badge-success">Embedding bor</span> @else <span class="badge badge-danger">Embedding yo'q</span> @endif</td>
                             <td>{{ date('d.m.Y H:i', strtotime($doc->created_at)) }}</td>
                             <td>
                                 <button class="btn btn-sm btn-danger" onclick="deleteDocument({{ $doc->id }})">
@@ -169,8 +181,10 @@ function startPolling(documentId) {
             if (data.success && data.progress.progress >= 100) {
                 clearInterval(interval);
                 $('#loading-modal').modal('hide');
-                alert('Fayl muvaffaqiyatli yuklandi va embedding qayta ishlandi!');
-                window.location.reload();
+                showSuccessMessage('Fayl muvaffaqiyatli yuklandi va embedding qayta ishlandi!');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
             }
         })
         .catch(error => {
@@ -181,6 +195,22 @@ function startPolling(documentId) {
 
 function hideLoading() {
     $('#loading-modal').modal('hide');
+}
+
+function showSuccessMessage(message) {
+    const successDiv = document.getElementById('ajax-success-message');
+    const successText = document.getElementById('ajax-success-text');
+    successText.textContent = message;
+    successDiv.style.display = 'block';
+    successDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function showErrorMessage(message) {
+    const errorDiv = document.getElementById('ajax-error-message');
+    const errorText = document.getElementById('ajax-error-text');
+    errorText.textContent = message;
+    errorDiv.style.display = 'block';
+    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -236,12 +266,12 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
 
         if (!uploadForm.title.value.trim()) {
-            alert('Iltimos, sarlavha kiriting!');
+            showErrorMessage('Iltimos, sarlavha kiriting!');
             return;
         }
 
         if (!selectedFile) {
-            alert('Iltimos, fayl tanlang!');
+            showErrorMessage('Iltimos, fayl tanlang!');
             return;
         }
 
@@ -272,13 +302,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 startPolling(data.document_id);
             } else {
                 hideLoading();
-                alert('Xatolik: ' + (data.error || 'Noma\'lum xatolik'));
+                showErrorMessage('Xatolik: ' + (data.error || 'Noma\'lum xatolik'));
             }
         })
         .catch(error => {
             console.error('Upload error:', error);
             hideLoading();
-            alert('Yuklashda xatolik yuz berdi');
+            showErrorMessage('Yuklashda xatolik yuz berdi');
         });
     });
 
@@ -312,15 +342,17 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert("Hujjat o'chirildi");
-                    window.location.reload();
+                    showSuccessMessage("Hujjat o'chirildi");
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
                 } else {
-                    alert('Xatolik: ' + (data.error || 'Noma\'lum xatolik'));
+                    showErrorMessage('Xatolik: ' + (data.error || 'Noma\'lum xatolik'));
                 }
             })
             .catch(error => {
                 console.error('Delete error:', error);
-                alert("O'chirishda xatolik");
+                showErrorMessage("O'chirishda xatolik");
             });
         }
     };

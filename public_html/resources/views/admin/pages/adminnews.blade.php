@@ -57,7 +57,7 @@
                                     <td>{{ $item->info }}</td>
                                     <td>{{ $item->youtube }}</td>
                                     <td>{{ $category->title ?? 'No Category' }}</td>
-                                    <td>@if($item->embedding) <span style="color: green; font-size: 20px;">●</span> @else <span style="color: red; font-size: 20px;">●</span> @endif</td>
+                                    <td>@if($item->embedding) <span class="badge badge-success">Embedding bor</span> @else <span class="badge badge-danger">Embedding yo'q</span> @endif</td>
                                     <td>
                                         <!-- Edit and Delete buttons in the same row -->
                                         <a href="{{route('editnews',['id'=>$item->id])}}" class="btn btn-warning">Edit</a>

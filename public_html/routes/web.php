@@ -115,5 +115,7 @@ Route::prefix('admin')->group(function() {
     Route::post('/ai-knowledge/store', [App\Http\Controllers\admin\AIKnowledgeController::class, 'store'])->name('ai-knowledge.store');
     Route::match(['GET','POST'], '/ai-knowledge/update/{id}', [App\Http\Controllers\admin\AIKnowledgeController::class, 'update'])->name('ai-knowledge.update');
     Route::match(['GET','POST'], '/ai-knowledge/destroy/{id}', [App\Http\Controllers\admin\AIKnowledgeController::class, 'destroy'])->name('ai-knowledge.delete');
+    Route::post('/ai-knowledge/generate-embedding/{id}', [App\Http\Controllers\admin\AIKnowledgeController::class, 'generateEmbedding'])->name('ai-knowledge.generate-embedding');
+    Route::post('/ai-knowledge/generate-all-embeddings', [App\Http\Controllers\admin\AIKnowledgeController::class, 'generateAllEmbeddings'])->name('ai-knowledge.generate-all-embeddings');
     Route::post('/ai-knowledge/seed-default', [App\Http\Controllers\admin\AIKnowledgeController::class, 'seedDefault'])->name('ai-knowledge.seed-default');
 });

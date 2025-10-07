@@ -24,5 +24,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         \App\Jobs::observe(\App\Observers\JobObserver::class);
+        \App\News::observe(\App\Observers\NewsObserver::class);
+        \App\Trainings::observe(\App\Observers\TrainingsObserver::class);
+        \App\AiKnowledge::observe(\App\Observers\AiKnowledgeObserver::class);
     }
 }

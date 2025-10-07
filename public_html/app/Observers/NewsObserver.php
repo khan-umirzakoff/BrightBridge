@@ -2,11 +2,11 @@
 
 namespace App\Observers;
 
-use App\Jobs;
+use App\News;
 use App\Contracts\AIService;
 use Illuminate\Support\Facades\Log;
 
-class JobObserver
+class NewsObserver
 {
     protected $aiService;
 
@@ -15,39 +15,35 @@ class JobObserver
         $this->aiService = $aiService;
     }
 
-    public function created(Jobs $job)
+    public function created(News $news)
     {
-        $this->generateEmbedding($job);
+        $this->generateEmbedding($news);
     }
 
-    public function updated(Jobs $job)
+    public function updated(News $news)
     {
-        // Faqat title, info, quals o'zgargan bo'lsa
-        if ($job->isDirty(['title', 'info', 'quals', 'company', 'location'])) {
-            $this->generateEmbedding($job);
+        // Faqat title, about, info o'zgargan bo'lsa
+        if ($news->isDirty(['title', 'about', 'info'])) {
+            $this->generateEmbedding($news);
         }
     }
 
-    protected function generateEmbedding(Jobs $job)
+    protected function generateEmbedding(News $news)
     {
-        $this->retryEmbedding(function() use ($job) {
-            $text = "Lavozim: {$job->title}. " .
-                    "Kompaniya: {$job->company}. " .
-                    "Joylashuv: {$job->location}. " .
-                    "Ish turi: {$job->type}. " .
-                    "Ma'lumot: " . strip_tags($job->info) . ". " .
-                    "Talablar: " . strip_tags($job->quals) . ". " .
-                    "Imtiyozlar: " . strip_tags($job->benefits);
+        $this->retryEmbedding(function() use ($news) {
+            $text = "Sarlavha: {$news->title}. " .
+                    "Qisqacha: {$news->about}. " .
+                    "To'liq ma'lumot: " . strip_tags($news->info);
             
             $embedding = $this->aiService->embed($text);
             
             // Save qilmasdan to'g'ridan o'zgartiramiz (infinite loop oldini olish)
-            Jobs::where('id', $job->id)->update([
+            News::where('id', $news->id)->update([
                 'embedding' => json_encode($embedding)
             ]);
             
-            Log::info("Embedding yaratildi: Job #{$job->id}");
-        }, "Job #{$job->id}");
+            Log::info("Embedding yaratildi: News #{$news->id}");
+        }, "News #{$news->id}");
     }
 
     protected function retryEmbedding($callback, $context)
