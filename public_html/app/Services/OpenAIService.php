@@ -48,6 +48,13 @@ class OpenAIService implements AIService
             'content' => $prompt
         ];
 
+        $messages = [
+            [
+                'role' => 'system',
+                'content' => $this->getSystemPrompt()
+            ]
+        ] + $messages;
+
         try {
             $response = $this->client->post($url, [
                 'headers' => [
@@ -185,5 +192,10 @@ class OpenAIService implements AIService
             Log::error('OpenAI Vision Error', ['error' => $e->getMessage()]);
             throw new \RuntimeException('Rasmni tahlil qilishda xatolik');
         }
+    }
+
+    public function getSystemPrompt(): string
+    {
+        return \App\AiSetting::getSystemPrompt();
     }
 }

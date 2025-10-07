@@ -79,7 +79,7 @@ class GeminiAIService implements AIService
         ];
 
         // System instruction
-        $systemPrompt = env('AI_SYSTEM_PROMPT', 'Siz JobCare platformasi AI assistantisiz. Oddiy suhbatda do\'stona javob bering. Agar foydalanuvchi ish, vakansiya so\'rasa - search_jobs function chaqiring.');
+        $systemPrompt = $this->getSystemPrompt();
         $payload['systemInstruction'] = [
             'parts' => [['text' => $systemPrompt]]
         ];
@@ -363,13 +363,18 @@ class GeminiAIService implements AIService
     public function chatWithImagesAndThinking(string $prompt, array $base64Images, array $history = []): array
     {
         $response = $this->chatWithImages($prompt, $base64Images, $history);
-        
+
         // Image analysis usually involves thinking
         $hasThinking = true;
-        
+
         return [
             'response' => $response,
             'thinking' => $hasThinking
         ];
+    }
+
+    public function getSystemPrompt(): string
+    {
+        return \App\AiSetting::getSystemPrompt();
     }
 }

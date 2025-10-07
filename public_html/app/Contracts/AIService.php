@@ -11,4 +11,6 @@ interface AIService
     public function chatWithImages(string $prompt, array $images, array $history = []): string;
 
     public function embed(string $text): array;
+
+    public function getSystemPrompt(): string;
 }

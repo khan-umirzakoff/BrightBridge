@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\admin;
 
 use App\AiKnowledge;
+use App\AiSetting;
 use App\Contracts\AIService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -232,5 +233,21 @@ class AIKnowledgeController extends Controller
         }
 
         return redirect()->back()->with('success', 'Standart ma\'lumotlar yuklandi');
+    }
+
+    public function updateSystemPrompt(Request $request)
+    {
+        session_start();
+        if (!isset($_SESSION['company_id'])){
+            return redirect()->route("login2");
+        }
+
+        $request->validate([
+            'system_prompt' => 'required|string',
+        ]);
+
+        AiSetting::setSystemPrompt($request->system_prompt);
+
+        return redirect()->back()->with('success', 'System prompt muvaffaqiyatli yangilandi');
     }
 }
