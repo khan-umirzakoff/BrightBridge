@@ -75,8 +75,8 @@
                                     <small class="form-text text-muted">Bu ma'lumot haqida qo'shimcha eslatma (faqat siz uchun).</small>
                                 </div>
                                 <div class="col-md-4 form-group">
-                                    <label for="priority">⭐ Muhimlik (0-100)</label>
-                                    <input type="number" name="priority" id="priority" class="form-control" min="0" max="100" value="{{ old('priority', 0) }}">
+                                    <label for="priority">⭐ Muhimlik (0-5)</label>
+                                    <input type="number" name="priority" id="priority" class="form-control" min="0" max="5" value="{{ old('priority', 0) }}">
                                     <small class="form-text text-muted">Qancha yuqori bo'lsa, shuncha muhim.</small>
                                 </div>
                             </div>
@@ -164,8 +164,8 @@
                                                     <input type="text" name="description" id="description{{ $item->id }}" class="form-control" value="{{ $item->description }}">
                                                 </div>
                                                 <div class="col-md-4 form-group">
-                                                    <label for="priority{{ $item->id }}">⭐ Muhimlik</label>
-                                                    <input type="number" name="priority" id="priority{{ $item->id }}" class="form-control" min="0" max="100" value="{{ $item->priority ?? 0 }}">
+                                                    <label for="priority{{ $item->id }}">⭐ Muhimlik (0-5)</label>
+                                                    <input type="number" name="priority" id="priority{{ $item->id }}" class="form-control" min="0" max="5" value="{{ $item->priority ?? 0 }}">
                                                 </div>
                                             </div>
                                         </div>

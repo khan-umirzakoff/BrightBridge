@@ -42,7 +42,7 @@ class AIKnowledgeController extends Controller
             'key' => 'required|string|max:100',
             'value' => 'required|string',
             'description' => 'nullable|string',
-            'priority' => 'nullable|integer|min:0|max:100',
+            'priority' => 'nullable|integer|min:0|max:5',
         ]);
 
         $data = $request->all();
@@ -74,7 +74,7 @@ class AIKnowledgeController extends Controller
             'key' => 'required|string|max:100',
             'value' => 'required|string',
             'description' => 'nullable|string',
-            'priority' => 'nullable|integer|min:0|max:100',
+            'priority' => 'nullable|integer|min:0|max:5',
         ]);
 
         $data = $request->all();
@@ -118,42 +118,42 @@ class AIKnowledgeController extends Controller
                 'key' => 'Telefon raqam',
                 'value' => '+998 71 123 45 67',
                 'description' => 'Asosiy qo\'ng\'iroq raqami',
-                'priority' => 100,
+                'priority' => 5,
             ],
             [
                 'category' => 'contact',
                 'key' => 'Email',
                 'value' => 'info@jobcare.uz',
                 'description' => 'Email manzili',
-                'priority' => 90,
+                'priority' => 5,
             ],
             [
                 'category' => 'contact',
                 'key' => 'Ish vaqti',
                 'value' => 'Dushanba-Juma: 9:00-18:00',
                 'description' => 'Ofis ish vaqti',
-                'priority' => 80,
+                'priority' => 4,
             ],
             [
                 'category' => 'about',
                 'key' => 'Platforma haqida',
                 'value' => 'JobCare - O\'zbekistondagi eng yirik ish topish platformasi. Biz ishchilar va ish beruvchilarni bog\'lab beramiz.',
                 'description' => 'Qisqacha tavsif',
-                'priority' => 95,
+                'priority' => 5,
             ],
             [
                 'category' => 'service',
                 'key' => 'Bepul xizmatlar',
                 'value' => 'Ish e\'lonlarini ko\'rish, CV yuklash, vakansiyalarga murojaat qilish - mutlaqo bepul!',
                 'description' => 'Bepul xizmatlar',
-                'priority' => 85,
+                'priority' => 4,
             ],
             [
                 'category' => 'faq',
                 'key' => 'Qanday ro\'yxatdan o\'tish mumkin?',
                 'value' => 'Saytning yuqori qismidagi "Ro\'yxatdan o\'tish" tugmasini bosing va ma\'lumotlaringizni kiriting.',
                 'description' => 'Ro\'yxatdan o\'tish',
-                'priority' => 75,
+                'priority' => 3,
             ],
         ];
 
