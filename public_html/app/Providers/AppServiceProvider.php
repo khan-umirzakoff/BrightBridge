@@ -23,9 +23,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        \App\Jobs::observe(\App\Observers\JobObserver::class);
-        \App\News::observe(\App\Observers\NewsObserver::class);
-        \App\Trainings::observe(\App\Observers\TrainingsObserver::class);
-        \App\AiKnowledge::observe(\App\Observers\AiKnowledgeObserver::class);
+        // Observers temporarily disabled - use batch embedding instead
+        // Auto-embedding on create/update can cause timeouts in sync mode
+        // Use "Barcha Embeddinglarni Yaratish" button in AI Knowledge page
+
+        // \App\Jobs::observe(\App\Observers\JobObserver::class);
+        // \App\News::observe(\App\Observers\NewsObserver::class);
+        // \App\Trainings::observe(\App\Observers\TrainingsObserver::class);
+        // \App\AiKnowledge::observe(\App\Observers\AiKnowledgeObserver::class);
     }
 }

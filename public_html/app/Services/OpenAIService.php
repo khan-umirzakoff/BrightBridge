@@ -194,6 +194,35 @@ class OpenAIService implements AIService
         }
     }
 
+    public function chatWithThinking(string $prompt, array $history = []): array
+    {
+        $response = $this->chat($prompt, $history);
+
+        // Simulate thinking detection
+        $hasThinking = strlen($response) > 100 ||
+                      str_contains(strtolower($response), 'analiz') ||
+                      str_contains(strtolower($response), 'o\'ylab') ||
+                      str_contains(strtolower($response), 'hisoblab');
+
+        return [
+            'response' => $response,
+            'thinking' => $hasThinking
+        ];
+    }
+
+    public function chatWithImagesAndThinking(string $prompt, array $images, array $history = []): array
+    {
+        $response = $this->chatWithImages($prompt, $images, $history);
+
+        // Image analysis usually involves thinking
+        $hasThinking = true;
+
+        return [
+            'response' => $response,
+            'thinking' => $hasThinking
+        ];
+    }
+
     public function getSystemPrompt(): string
     {
         return \App\AiSetting::getSystemPrompt();

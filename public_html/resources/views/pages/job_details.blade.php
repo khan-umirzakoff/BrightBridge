@@ -109,19 +109,19 @@
                         if (isset($_SESSION['candidate_id'])) {?>
                         
 
-    @if($check)
+    <?php if($check): ?>
     <div class="submit_btn">
         <a class="boxed-btn3" style="width: 100%; height: 50px;" href="{{route('myapplications',['id'=>$userid])}}">You have already applied</a>
     </div>
-@else
-  
+<?php else: ?>
+
 
                                     <div class="submit_btn">
                                         <a class="boxed-btn3" style="width: 100%;height: 50px" href="{{route('apply',['id'=>$job[0]->id])}}">Apply</a>
 
                                     </div>
-         
-@endif
+
+<?php endif; ?>
                      <?php  } else{?>
 
                                      <div class="submit_btn">

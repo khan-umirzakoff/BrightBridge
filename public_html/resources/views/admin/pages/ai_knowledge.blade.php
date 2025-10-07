@@ -71,21 +71,13 @@
 
             <!-- Bulk Actions -->
             <div class="col-lg-12 mb-3">
-                @if(Cache::get('bulk_knowledge_embedding_in_progress'))
-                <div class="alert alert-info">
-                    <i class="fas fa-spinner fa-spin"></i> Bulk embedding jarayonida. Iltimos kuting...
-                </div>
-                <button type="button" class="btn btn-warning" disabled>
-                    <i class="fas fa-robot"></i> Barcha Embeddinglarni Yaratish (Jarayonda)
-                </button>
-                @else
-                <form method="POST" action="{{ route('ai-knowledge.generate-all-embeddings') }}" style="display:inline" onsubmit="return confirm('Barcha embedding yo\'q ma\'lumotlar uchun embedding yaratilsinmi? Bu fon rejimida bajariladi.')">
+                <form method="POST" action="{{ route('ai-knowledge.generate-all-embeddings') }}" style="display:inline" id="batch-embedding-form" onsubmit="showBatchLoading()">
                     @csrf
-                    <button type="submit" class="btn btn-warning">
+                    <button type="submit" class="btn btn-warning btn-lg">
                         <i class="fas fa-robot"></i> Barcha Embeddinglarni Yaratish
                     </button>
+                    <small class="text-muted d-block mt-1">Har safar 10ta har bir kategoriyadan. Davom ettirish uchun qaytadan bosing.</small>
                 </form>
-                @endif
                 <form method="POST" action="{{ route('ai-knowledge.seed-default') }}" style="display:inline; margin-left: 10px;" onsubmit="return confirm('Standart ma\'lumotlar yuklansinmi?')">
                     @csrf
                     <button type="submit" class="btn btn-info">
@@ -93,6 +85,25 @@
                     </button>
                 </form>
             </div>
+
+            <!-- Loading Overlay for Batch Embedding -->
+            <div id="batch-loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white;">
+                    <div class="spinner-border text-warning" style="width: 4rem; height: 4rem;" role="status">
+                        <span class="sr-only">Yuklanmoqda...</span>
+                    </div>
+                    <h3 class="mt-4">Embedding yaratilmoqda...</h3>
+                    <p class="text-muted">Iltimos, kuting. Bu bir necha daqiqa davom etishi mumkin.</p>
+                    <p class="text-warning"><i class="fas fa-exclamation-triangle"></i> Sahifani yopmang yoki yangilamang!</p>
+                </div>
+            </div>
+
+            <script>
+            function showBatchLoading() {
+                $('#batch-loading-overlay').fadeIn();
+                return true; // Allow form submission
+            }
+            </script>
 
             <br>
 
