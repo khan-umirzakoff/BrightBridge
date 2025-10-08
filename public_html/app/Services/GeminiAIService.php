@@ -177,10 +177,12 @@ class GeminiAIService implements AIService
                 
                 $secondPayload = [
                     'contents' => $contents,
-                    'generationConfig' => $payload['generationConfig']
+                    'generationConfig' => $payload['generationConfig'],
+                    'tools' => $payload['tools'],  // Add tools definition
+                    'systemInstruction' => $payload['systemInstruction']  // Add system prompt
                 ];
-                
-                Log::info('Sending function response back to AI');
+
+                Log::info('Sending function response back to AI', ['payload' => json_encode($secondPayload)]);
                 
                 $response2 = $this->client->post($url, ['json' => $secondPayload]);
                 $statusCode2 = $response2->getStatusCode();
@@ -188,8 +190,13 @@ class GeminiAIService implements AIService
                 $data2 = json_decode($body2, true);
                 
                 if ($statusCode2 !== 200) {
-                    Log::error('Function response API error', ['response' => $body2]);
-                    return 'Function executed but response error';
+                    Log::error('Function response API error', [
+                        'status' => $statusCode2,
+                        'response' => $body2,
+                        'function' => $functionCall['name']
+                    ]);
+                    $errorMsg = $data2['error']['message'] ?? 'Unknown error';
+                    throw new \RuntimeException('AI service error after function call: ' . $errorMsg);
                 }
                 
                 Log::info('Function response received', ['data' => $data2]);
