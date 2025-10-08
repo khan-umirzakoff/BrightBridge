@@ -102,7 +102,7 @@ class GeminiAIService implements AIService
                             'description' => 'Get platform statistics and overview. Use when user asks about numbers, counts, or platform overview.',
                             'parameters' => [
                                 'type' => 'object',
-                                'properties' => [],
+                                'properties' => (object)[],  // Empty object, not array
                                 'required' => []
                             ]
                         ]
