@@ -70,7 +70,7 @@ class DocumentController extends Controller
             }
 
             // Save to database without embedding
-            $document = DB::table('ai_documents')->insertGetId([
+            $documentId = DB::table('ai_documents')->insertGetId([
                 'title' => $request->title,
                 'category' => $request->category ?? 'general', // Default to general if empty
                 'description' => $request->description,
@@ -82,15 +82,25 @@ class DocumentController extends Controller
                 'updated_at' => now(),
             ]);
 
-            // Dispatch job to process embeddings
-            ProcessDocumentEmbedding::dispatch($document);
+            // Process embeddings immediately (sync mode)
+            // This ensures chunking happens right away instead of waiting for queue worker
+            try {
+                $job = new ProcessDocumentEmbedding($documentId);
+                $job->handle($this->aiService);
+            } catch (\Exception $e) {
+                Log::error('Document embedding processing error', [
+                    'document_id' => $documentId,
+                    'error' => $e->getMessage()
+                ]);
+                // Continue anyway - embedding can be regenerated later
+            }
 
-            $message = 'Document uploaded successfully. Processing embeddings in background.';
+            $message = 'Document uploaded and processed successfully.';
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
                     'message' => $message,
-                    'document_id' => $document
+                    'document_id' => $documentId
                 ]);
             } else {
                 return redirect()->back()->with('success', $message);

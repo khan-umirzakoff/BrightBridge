@@ -43,12 +43,14 @@ class ProcessDocumentEmbedding implements ShouldQueue
         $content = $document->content;
 
         // Split content into chunks for embedding
-        $chunkSize = 2000;
+        // Increased from 2000 to 5000 for better context coverage
+        $chunkSize = 5000;
         $chunks = str_split($content, $chunkSize);
         $embeddings = [];
 
-        // Limit to max 20 chunks for better semantic search granularity
-        $chunks = array_slice($chunks, 0, 20);
+        // Increased from 20 to 100 chunks for books (500KB total coverage)
+        // This allows large documents/books to be fully searchable
+        $chunks = array_slice($chunks, 0, 100);
         $totalChunks = count($chunks);
 
         foreach ($chunks as $index => $chunk) {
@@ -64,8 +66,8 @@ class ProcessDocumentEmbedding implements ShouldQueue
                 'total_chunks' => $totalChunks
             ], 3600); // 1 hour
 
-            // Sleep to simulate processing time
-            sleep(2);
+            // Small delay to avoid API rate limits (reduced from 2s to 0.3s)
+            usleep(300000); // 0.3 seconds
         }
 
         // Update document with embeddings
