@@ -522,7 +522,6 @@ class RAGService
                 'jobs' => ['title', 'company', 'location', 'type', 'info'],
                 'news' => ['title', 'desc'],
                 'trainings' => ['title', 'desc'],
-                // 'newscategory' => ['name', 'description'], // Table doesn't exist, removed
             ];
 
             foreach ($tables as $table => $fields) {
@@ -534,13 +533,13 @@ class RAGService
 
                     foreach ($results as $r) {
                         $itemId = "{$table}_{$r['item']->id}";
-                        // Avoid duplicates from direct search
-                        // Lower threshold for ai_documents (0.25), keep 0.4 for others
                         $threshold = ($table === 'ai_documents') ? 0.25 : 0.4;
                         if ($r['similarity'] > $threshold && !in_array($itemId, $processedIds)) {
-                            $content = $this->formatItemContent($r['item'], $table, $fields);
+                            $formatted = $this->formatItemContent($r['item'], $table, $fields);
                             $allResults[] = [
-                                'content' => $content,
+                                'content' => $formatted['content'],
+                                'url' => $formatted['url'],
+                                'title' => $formatted['title'],
                                 'similarity' => $r['similarity'],
                                 'source' => $table,
                                 'id' => $itemId
@@ -556,56 +555,67 @@ class RAGService
             Log::error('RAG retrieve (semantic part) error', ['error' => $e->getMessage()]);
         }
 
-        // Sort by similarity (direct facts will be on top with 1.0)
         usort($allResults, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
-
-        // Limit to top 7 most relevant items
         $knowledge = array_slice($allResults, 0, 7);
 
         return $knowledge;
     }
 
-    protected function formatItemContent($item, string $table, array $fields): string
+    protected function formatItemContent($item, string $table, array $fields): array
     {
         $content = "";
+        $url = null;
+        $title = null;
+        $baseUrl = rtrim(env('APP_URL', 'http://localhost:8000'), '/');
 
         switch ($table) {
             case 'ai_documents':
+                $title = $item->title;
                 $content = "**{$item->title}**\n";
                 if (!empty($item->category)) $content .= "- Kategoriya: {$item->category}\n";
                 if (!empty($item->description)) $content .= "- Tavsif: {$item->description}\n";
-                // Increased from 50000 to 100000 for better book content coverage
                 $content .= "- Mazmun: " . mb_substr(strip_tags($item->content ?? ''), 0, 100000);
                 break;
 
             case 'ai_knowledge':
+                $title = $item->key;
                 $content = "**{$item->key}** ({$item->category})\n";
                 if (!empty($item->description)) $content .= "- Tavsif: {$item->description}\n";
                 $content .= "- Qiymat: {$item->value}";
                 break;
 
             case 'jobs':
+                $title = $item->title;
+                $url = "{$baseUrl}/job_details/{$item->id}";
                 $content = "**{$item->title}**\n";
                 $content .= "- Kompaniya: {$item->company}\n";
                 $content .= "- Joylashuv: {$item->location}\n";
                 $content .= "- Turi: {$item->type}\n";
-                if (!empty($item->info)) $content .= "- Ma'lumot: " . mb_substr(strip_tags($item->info), 0, 1000) . "...";
+                if (!empty($item->info)) $content .= "- Ma'lumot: " . mb_substr(strip_tags($item->info), 0, 1000) . "...\n";
+                $content .= "- [Batafsil]({$url})";
                 break;
 
             case 'news':
+                $title = $item->title;
+                $url = "{$baseUrl}/news/{$item->id}";
                 $content = "**{$item->title}**\n";
-                $content .= "- Yangilik: " . mb_substr(strip_tags($item->desc ?? ''), 0, 2000) . "...";
+                $content .= "- Yangilik: " . mb_substr(strip_tags($item->desc ?? ''), 0, 2000) . "...\n";
+                $content .= "- [Batafsil]({$url})";
                 break;
 
             case 'trainings':
+                $title = $item->title;
+                $url = "{$baseUrl}/trainings/{$item->id}";
                 $content = "**{$item->title}**\n";
-                $content .= "- Trening: " . mb_substr(strip_tags($item->desc ?? ''), 0, 2000) . "...";
+                $content .= "- Trening: " . mb_substr(strip_tags($item->desc ?? ''), 0, 2000) . "...\n";
+                $content .= "- [Batafsil]({$url})";
                 break;
 
             default:
+                $title = "Noma'lum manba";
                 $content = json_encode($item);
         }
 
-        return $content;
+        return ['content' => $content, 'url' => $url, 'title' => $title];
     }
 }
