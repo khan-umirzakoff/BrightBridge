@@ -112,15 +112,6 @@
 </script>
 <!-- Bootstrap 4 -->
 <script src="/adminsite/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-<!-- ChartJS -->
-<script src="/adminsite/plugins/chart.js/Chart.min.js"></script>
-<!-- Sparkline -->
-<script src="/adminsite/plugins/sparklines/sparkline.js"></script>
-<!-- JQVMap -->
-<script src="/adminsite/plugins/jqvmap/jquery.vmap.min.js"></script>
-<script src="/adminsite/plugins/jqvmap/maps/jquery.vmap.usa.js"></script>
-<!-- jQuery Knob Chart -->
-<script src="/adminsite/plugins/jquery-knob/jquery.knob.min.js"></script>
 <!-- daterangepicker -->
 <script src="/adminsite/plugins/moment/moment.min.js"></script>
 <script src="/adminsite/plugins/daterangepicker/daterangepicker.js"></script>
@@ -134,7 +125,19 @@
 <script src="/adminsite/dist/js/adminlte.js"></script>
 <!-- AdminLTE for demo purposes -->
 <script src="/adminsite/dist/js/demo.js"></script>
+
+<!-- Only load dashboard scripts on dashboard page -->
+@if(Request::is('admin') || Request::is('admin/dashboard'))
+<!-- Sparkline -->
+<script src="/adminsite/plugins/sparklines/sparkline.js"></script>
+<!-- JQVMap -->
+<script src="/adminsite/plugins/jqvmap/jquery.vmap.min.js"></script>
+<script src="/adminsite/plugins/jqvmap/maps/jquery.vmap.usa.js"></script>
+<!-- jQuery Knob Chart -->
+<script src="/adminsite/plugins/jquery-knob/jquery.knob.min.js"></script>
+<script src="/adminsite/plugins/chart.js/Chart.min.js"></script>
 <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
-<script src="/adminsite/dist/js/pages/dashboard.js"></script><!-- Additional JS files removed - using AdminLTE built-in scripts -->
+<script src="/adminsite/dist/js/pages/dashboard.js"></script>
+@endif<!-- Additional JS files removed - using AdminLTE built-in scripts -->
 </body>
 </html>

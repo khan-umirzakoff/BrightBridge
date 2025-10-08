@@ -74,8 +74,8 @@
                                 <div id="drop-zone" class="text-center p-5 border border-dashed border-primary rounded" style="cursor: pointer; background-color: #f8f9fa;">
                                     <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
                                     <h5 class="text-primary">Faylni bu yerga torting yoki bosing</h5>
-                                    <p class="text-muted">Faqat txt, md, pdf, doc, docx fayllar. Maksimal 10MB.</p>
-                                    <input type="file" name="file" id="file-input" accept=".txt,.md,.pdf,.doc,.docx" required style="display: none;">
+                                    <p class="text-muted">Faqat txt, md, pdf, doc, docx, epub fayllar. Maksimal 100MB (Kitoblar uchun).</p>
+                                    <input type="file" name="file" id="file-input" accept=".txt,.md,.pdf,.doc,.docx,.epub" required style="display: none;">
                                 </div>
                                 <div id="file-info" class="mt-2" style="display: none;">
                                     <small class="text-success">Tanlangan fayl: <span id="file-name"></span> (<span id="file-size"></span>)</small>
@@ -90,17 +90,14 @@
                     </form>
 
                     <!-- Loading Modal -->
-                    <div id="loading-modal" class="modal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" style="display: none;">
-                        <div class="modal-dialog modal-dialog-centered" role="document">
-                            <div class="modal-content">
-                                <div class="modal-body text-center">
-                                    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-                                        <span class="sr-only">Yuklanmoqda...</span>
-                                    </div>
-                                    <h5 class="mt-3">Fayl yuklanmoqda va embedding qayta ishlanmoqda...</h5>
-                                    <p class="text-muted">Iltimos, kuting. Bu bir necha daqiqa davom etishi mumkin.</p>
-                                </div>
+                    <div id="loading-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999;">
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: white; padding: 40px; border-radius: 10px; min-width: 400px;">
+                            <div class="spinner-border text-primary" style="width: 4rem; height: 4rem;" role="status">
+                                <span class="sr-only">Yuklanmoqda...</span>
                             </div>
+                            <h4 class="mt-4">Fayl yuklanmoqda va embedding yaratilmoqda...</h4>
+                            <p class="text-muted">Iltimos, sabr qiling. Bu bir necha daqiqa davom etishi mumkin.</p>
+                            <p class="text-warning"><small><i class="fas fa-exclamation-triangle"></i> Sahifani yopmang yoki yangilamang!</small></p>
                         </div>
                     </div>
                 </div>
@@ -164,37 +161,11 @@
 var csrfToken = '{{ csrf_token() }}';
 
 function showLoading() {
-    $('#loading-modal').modal('show');
-}
-
-function startPolling(documentId) {
-    // Start polling
-    const interval = setInterval(() => {
-        fetch(`/admin/ai-documents/progress/${documentId}`, {
-            headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.progress.progress >= 100) {
-                clearInterval(interval);
-                $('#loading-modal').modal('hide');
-                showSuccessMessage('Fayl muvaffaqiyatli yuklandi va embedding qayta ishlandi!');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            }
-        })
-        .catch(error => {
-            console.error('Progress error:', error);
-        });
-    }, 2000); // Poll every 2 seconds
+    $('#loading-modal').fadeIn();
 }
 
 function hideLoading() {
-    $('#loading-modal').modal('hide');
+    $('#loading-modal').fadeOut();
 }
 
 function showSuccessMessage(message) {
@@ -275,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Show loading immediately
+        // Show loading modal
         showLoading();
 
         const formData = new FormData();
@@ -293,22 +264,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.error || err.message || 'Server xatolik qaytardi');
+                });
+            }
+            return response.json();
+        })
         .then(data => {
+            hideLoading();
             if (data.success) {
                 uploadForm.reset();
                 fileInfo.style.display = 'none';
-                // Start polling for completion
-                startPolling(data.document_id);
+                showSuccessMessage(data.message || 'Fayl muvaffaqiyatli yuklandi va embedding yaratilmoqda!');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
             } else {
-                hideLoading();
                 showErrorMessage('Xatolik: ' + (data.error || 'Noma\'lum xatolik'));
             }
         })
         .catch(error => {
             console.error('Upload error:', error);
             hideLoading();
-            showErrorMessage('Yuklashda xatolik yuz berdi');
+            let errorMsg = 'Yuklashda xatolik yuz berdi';
+            if (error.message.includes('Failed to fetch')) {
+                errorMsg = 'Tarmoq xatoligi yoki fayl juda katta. Iltimos, qayta urinib ko\'ring.';
+            } else if (error.message) {
+                errorMsg = error.message;
+            }
+            showErrorMessage(errorMsg);
         });
     });
 

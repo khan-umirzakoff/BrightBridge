@@ -29,7 +29,7 @@
                     <tbody>
 
                     <?php foreach ($tovari as $item){?>
-                    <? if ($item['status'] == "1"){
+                    <?php if ($item['status'] == "1"){
                     ?>
 
 
@@ -58,7 +58,7 @@
 
 
 
-                    </tr><?php }  if ($item['status'] == "2"){
+                    </tr><?php }  <?php if ($item['status'] == "2"){
                     ?>
 
 
@@ -87,7 +87,7 @@
 
 
 
-                    </tr><?php } if ($item['status'] == "0"){
+                    </tr><?php } <?php if ($item['status'] == "0"){
                     ?>
 
 

@@ -47,7 +47,7 @@ class DocumentController extends Controller
         }
 
         $request->validate([
-            'file' => 'required|file|mimes:txt,pdf,doc,docx,md|max:10240', // 10MB max
+            'file' => 'required|file|mimes:txt,pdf,doc,docx,md,epub|max:102400', // 100MB max (for books)
             'title' => 'required|string|max:255',
             'category' => 'nullable|string|max:100',
             'description' => 'nullable|string|max:1000',
@@ -203,6 +203,10 @@ class DocumentController extends Controller
 
     protected function extractTextFromFile($file): string
     {
+        // Increase memory limit and execution time for large files
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', '300');
+
         $extension = strtolower($file->getClientOriginalExtension());
         $content = '';
 

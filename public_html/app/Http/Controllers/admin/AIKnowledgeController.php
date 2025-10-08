@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\admin;
 
 use App\AiKnowledge;
+use App\AiSetting;
 use App\Contracts\AIService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -88,7 +89,7 @@ class AIKnowledgeController extends Controller
         }
 
         $knowledge = AiKnowledge::findOrFail($id);
-        
+
         $request->validate([
             'category' => 'required|string|max:50',
             'key' => 'required|string|max:100',
@@ -153,23 +154,152 @@ class AIKnowledgeController extends Controller
             return redirect()->route("login2");
         }
 
-        // Faqat ai_knowledge uchun bulk embedding
-        $knowledges = AiKnowledge::whereNull('embedding')->orWhere('embedding', '')->get();
+        try {
+            // Set max execution time
+            set_time_limit(600); // 10 minutes
+            ini_set('max_execution_time', '600');
 
-        if ($knowledges->isEmpty()) {
-            return redirect()->back()->with('info', 'Embedding yaratish uchun ma\'lumot yo\'q.');
+            // Count missing embeddings
+            $jobsCount = \App\Jobs::whereNull('embedding')->count();
+            $newsCount = \App\News::whereNull('embedding')->count();
+            $trainingsCount = \App\Trainings::whereNull('embedding')->count();
+            $knowledgeCount = AiKnowledge::whereNull('embedding')->orWhere('embedding', '')->count();
+            $documentsCount = DB::table('ai_documents')->whereNull('embedding')->count();
+
+            $totalCount = $jobsCount + $newsCount + $trainingsCount + $knowledgeCount + $documentsCount;
+
+            if ($totalCount === 0) {
+                return redirect()->back()->with('info', 'Barcha ma\'lumotlar allaqachon embedding qilingan!');
+            }
+
+            Log::info('Batch embedding started', [
+                'jobs' => $jobsCount,
+                'news' => $newsCount,
+                'trainings' => $trainingsCount,
+                'knowledge' => $knowledgeCount,
+                'documents' => $documentsCount,
+                'total' => $totalCount
+            ]);
+
+            $processed = 0;
+            $failed = 0;
+
+            // Process Jobs
+            if ($jobsCount > 0) {
+                $jobs = \App\Jobs::whereNull('embedding')->limit(10)->get();
+                foreach ($jobs as $job) {
+                    try {
+                        $text = "{$job->title} {$job->company} {$job->location} {$job->type} " .
+                                strip_tags($job->info ?? '') . " " . strip_tags($job->quals ?? '') . " " . strip_tags($job->benefits ?? '');
+
+                        $embedding = $this->aiService->embed($text);
+
+                        DB::table('jobs')->where('id', $job->id)->update([
+                            'embedding' => json_encode($embedding)
+                        ]);
+
+                        $processed++;
+                        usleep(300000); // 0.3 second delay
+                    } catch (\Exception $e) {
+                        $failed++;
+                        Log::error("Job embedding failed: {$job->id}", ['error' => $e->getMessage()]);
+                    }
+                }
+            }
+
+            // Process News
+            if ($newsCount > 0) {
+                $newsList = \App\News::whereNull('embedding')->limit(10)->get();
+                foreach ($newsList as $item) {
+                    try {
+                        $text = "{$item->title} {$item->about} " . strip_tags($item->info ?? '');
+
+                        $embedding = $this->aiService->embed($text);
+
+                        DB::table('news')->where('id', $item->id)->update([
+                            'embedding' => json_encode($embedding)
+                        ]);
+
+                        $processed++;
+                        usleep(300000);
+                    } catch (\Exception $e) {
+                        $failed++;
+                        Log::error("News embedding failed: {$item->id}", ['error' => $e->getMessage()]);
+                    }
+                }
+            }
+
+            // Process Trainings
+            if ($trainingsCount > 0) {
+                $trainings = \App\Trainings::whereNull('embedding')->limit(10)->get();
+                foreach ($trainings as $item) {
+                    try {
+                        $text = "Training: {$item->title}";
+
+                        $embedding = $this->aiService->embed($text);
+
+                        DB::table('trainings')->where('id', $item->id)->update([
+                            'embedding' => json_encode($embedding)
+                        ]);
+
+                        $processed++;
+                        usleep(300000);
+                    } catch (\Exception $e) {
+                        $failed++;
+                        Log::error("Training embedding failed: {$item->id}", ['error' => $e->getMessage()]);
+                    }
+                }
+            }
+
+            // Process AI Knowledge
+            if ($knowledgeCount > 0) {
+                $knowledges = AiKnowledge::whereNull('embedding')->orWhere('embedding', '')->limit(10)->get();
+                foreach ($knowledges as $item) {
+                    try {
+                        $text = "Kategoriya: {$item->category}. Kalit: {$item->key}. Qiymat: {$item->value}. Izoh: {$item->description}";
+
+                        $embedding = $this->aiService->embed($text);
+
+                        DB::table('ai_knowledge')->where('id', $item->id)->update([
+                            'embedding' => json_encode($embedding)
+                        ]);
+
+                        $processed++;
+                        usleep(300000);
+                    } catch (\Exception $e) {
+                        $failed++;
+                        Log::error("Knowledge embedding failed: {$item->id}", ['error' => $e->getMessage()]);
+                    }
+                }
+            }
+
+            Log::info("Batch embedding completed", [
+                'processed' => $processed,
+                'failed' => $failed,
+                'total' => $totalCount
+            ]);
+
+            $remaining = $totalCount - $processed;
+            $message = "Muvaffaqiyatli! {$processed} ta embedding yaratildi.";
+            if ($failed > 0) {
+                $message .= " {$failed} ta xatolik.";
+            }
+            if ($remaining > 0) {
+                $message .= " Yana {$remaining} ta qoldi. Tugmani qayta bosing davom ettirish uchun.";
+            } else {
+                $message .= " Hammasi tayyor!";
+            }
+
+            return redirect()->back()->with('success', $message);
+
+        } catch (\Exception $e) {
+            Log::error('Batch embedding failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->back()->with('error', 'Xatolik: ' . $e->getMessage());
         }
-
-        // Bulk embedding boshlandi flagini o'rnatish
-        Cache::put('bulk_knowledge_embedding_in_progress', true, now()->addMinutes(60)); // 1 soat
-
-        // Har bir ma'lumot uchun job yaratish
-        foreach ($knowledges as $knowledge) {
-            \App\Jobs\ProcessKnowledgeEmbedding::dispatch($knowledge);
-        }
-
-        $count = $knowledges->count();
-        return redirect()->back()->with('success', "{$count} ta ma'lumot uchun embedding yaratish boshlandi. Jarayon fon rejimida davom etadi.");
     }
 
     public function seedDefault()
