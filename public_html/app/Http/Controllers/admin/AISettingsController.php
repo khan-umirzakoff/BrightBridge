@@ -54,10 +54,21 @@ class AISettingsController extends Controller
             }
         }
 
+        // Sync critical settings to .env file for flexibility
+        $this->syncToEnv([
+            'AI_PROVIDER' => $validated['ai_provider'] ?? null,
+            'GEMINI_API_KEY' => $validated['gemini_api_key'] ?? null,
+            'GEMINI_MODEL' => $validated['gemini_model'] ?? null,
+            'GEMINI_EMBEDDING_MODEL' => $validated['gemini_embedding_model'] ?? null,
+            'OPENAI_API_KEY' => $validated['openai_api_key'] ?? null,
+            'OPENAI_MODEL' => $validated['openai_model'] ?? null,
+            'OPENAI_EMBEDDING_MODEL' => $validated['openai_embedding_model'] ?? null,
+        ]);
+
         // Clear all AI-related caches
         Cache::flush();
 
-        return redirect()->back()->with('success', 'AI Settings updated successfully');
+        return redirect()->back()->with('success', 'AI Settings updated successfully and synced to .env');
     }
 
     public function testConnection(Request $request)
@@ -106,5 +117,72 @@ class AISettingsController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Sync database settings to .env file
+     * This allows both admin panel and .env configuration
+     */
+    private function syncToEnv(array $settings)
+    {
+        $envPath = base_path('.env');
+
+        if (!file_exists($envPath)) {
+            return false;
+        }
+
+        try {
+            $envContent = file_get_contents($envPath);
+
+            foreach ($settings as $key => $value) {
+                if ($value === null) continue;
+
+                // Escape special characters in value
+                $escapedValue = $this->escapeEnvValue($value);
+
+                // Check if key exists in .env
+                $pattern = "/^{$key}=.*$/m";
+
+                if (preg_match($pattern, $envContent)) {
+                    // Update existing key
+                    $envContent = preg_replace($pattern, "{$key}={$escapedValue}", $envContent);
+                } else {
+                    // Add new key at the end of AI section
+                    $aiSectionPattern = "/(# Google Gemini.*?(?=\n# |$))/s";
+                    if (preg_match($aiSectionPattern, $envContent, $matches)) {
+                        $aiSection = $matches[1];
+                        $newAiSection = $aiSection . "\n{$key}={$escapedValue}";
+                        $envContent = str_replace($aiSection, $newAiSection, $envContent);
+                    } else {
+                        // If AI section not found, append at end
+                        $envContent .= "\n{$key}={$escapedValue}";
+                    }
+                }
+            }
+
+            file_put_contents($envPath, $envContent);
+
+            // Reload environment variables
+            if (function_exists('opcache_reset')) {
+                opcache_reset();
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            \Log::error('Failed to sync settings to .env', ['error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Escape value for .env file
+     */
+    private function escapeEnvValue($value)
+    {
+        // If value contains spaces or special characters, wrap in quotes
+        if (preg_match('/[\s#"\'\\\\]/', $value)) {
+            return '"' . str_replace('"', '\\"', $value) . '"';
+        }
+        return $value;
     }
 }
