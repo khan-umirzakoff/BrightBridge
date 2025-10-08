@@ -85,7 +85,7 @@
                     <div class="form-group">
                         <label class="ai-form-label">API Key</label>
                         <div class="input-group">
-                            <input type="password" name="openai_api_key" class="ai-form-control" value="{{ $settings['openai'][0]->value ?? '' }}" placeholder="sk-...">
+                            <input type="password" name="openai_api_key" class="ai-form-control" value="{{ \App\AiSetting::get('openai_api_key', '') }}" placeholder="sk-...">
                             <div class="input-group-append">
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePassword(this)"><i class="fas fa-eye"></i></button>
                                 <button class="btn btn-info" type="button" onclick="testConnection('openai', this)">Test</button>
@@ -93,8 +93,8 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6"><div class="ai-form-group"><label class="ai-form-label">Chat Model</label><input type="text" name="openai_model" class="ai-form-control" value="{{ $settings['openai'][1]->value ?? 'gpt-4o' }}" placeholder="gpt-4o"></div></div>
-                        <div class="col-md-6"><div class="ai-form-group"><label class="ai-form-label">Embedding Model</label><input type="text" name="openai_embedding_model" class="ai-form-control" value="{{ $settings['openai'][2]->value ?? 'text-embedding-3-small' }}" placeholder="text-embedding-3-small"></div></div>
+                        <div class="col-md-6"><div class="ai-form-group"><label class="ai-form-label">Chat Model</label><input type="text" name="openai_model" class="ai-form-control" value="{{ \App\AiSetting::get('openai_model', 'gpt-4o') }}" placeholder="gpt-4o"></div></div>
+                        <div class="col-md-6"><div class="ai-form-group"><label class="ai-form-label">Embedding Model</label><input type="text" name="openai_embedding_model" class="ai-form-control" value="{{ \App\AiSetting::get('openai_embedding_model', 'text-embedding-3-small') }}" placeholder="text-embedding-3-small"></div></div>
                     </div>
                 </div>
 
@@ -103,7 +103,7 @@
                     <div class="form-group">
                         <label class="ai-form-label">API Key</label>
                         <div class="input-group">
-                            <input type="password" name="gemini_api_key" class="ai-form-control" value="{{ $settings['gemini'][0]->value ?? '' }}" placeholder="AIza...">
+                            <input type="password" name="gemini_api_key" class="ai-form-control" value="{{ \App\AiSetting::get('gemini_api_key', '') }}" placeholder="AIza...">
                              <div class="input-group-append">
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePassword(this)"><i class="fas fa-eye"></i></button>
                                 <button class="btn btn-info" type="button" onclick="testConnection('gemini', this)">Test</button>
@@ -111,8 +111,8 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6"><div class="ai-form-group"><label class="ai-form-label">Chat Model</label><input type="text" name="gemini_model" class="ai-form-control" value="{{ $settings['gemini'][1]->value ?? 'gemini-2.0-flash-exp' }}" placeholder="gemini-2.0-flash-exp"></div></div>
-                        <div class="col-md-6"><div class="ai-form-group"><label class="ai-form-label">Embedding Model</label><input type="text" name="gemini_embedding_model" class="ai-form-control" value="{{ $settings['gemini'][2]->value ?? 'gemini-embedding-001' }}" placeholder="gemini-embedding-001"></div></div>
+                        <div class="col-md-6"><div class="ai-form-group"><label class="ai-form-label">Chat Model</label><input type="text" name="gemini_model" class="ai-form-control" value="{{ \App\AiSetting::get('gemini_model', 'gemini-2.0-flash-exp') }}" placeholder="gemini-2.0-flash-exp"></div></div>
+                        <div class="col-md-6"><div class="ai-form-group"><label class="ai-form-label">Embedding Model</label><input type="text" name="gemini_embedding_model" class="ai-form-control" value="{{ \App\AiSetting::get('gemini_embedding_model', 'gemini-embedding-001') }}" placeholder="gemini-embedding-001"></div></div>
                     </div>
                 </div>
             </div>
