@@ -19,7 +19,7 @@ public_html/_ide_helper.php
 public_html/.DS_Store
 
 # Custom ignores
-run.sh
+# run.sh
 /mysql-data/
 /mysql-run/
 mysql.log

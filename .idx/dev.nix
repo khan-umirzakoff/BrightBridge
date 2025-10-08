@@ -19,4 +19,5 @@ in
     composerPkg
     mysqlPkg
   ];
+  services.mysql.enable = true;
 }
