@@ -21,12 +21,14 @@ class GeminiAIService implements AIService
         $this->client = new Client(['timeout' => 120]); // Increased timeout for potentially long requests
 
         try {
+            // Priority: Database settings > .env > defaults
             $this->apiKey = \App\AiSetting::get('gemini_api_key') ?: env('GEMINI_API_KEY');
-            $this->model = \App\AiSetting::get('gemini_model') ?: env('GEMINI_MODEL', 'gemini-1.5-flash');
+            $this->model = \App\AiSetting::get('gemini_model') ?: env('GEMINI_MODEL', 'gemini-flash-latest');
             $this->embeddingModel = \App\AiSetting::get('gemini_embedding_model') ?: env('GEMINI_EMBEDDING_MODEL', 'text-embedding-004');
         } catch (\Exception $e) {
+            // Fallback to .env if database not accessible
             $this->apiKey = env('GEMINI_API_KEY');
-            $this->model = env('GEMINI_MODEL', 'gemini-1.5-flash');
+            $this->model = env('GEMINI_MODEL', 'gemini-flash-latest');
             $this->embeddingModel = env('GEMINI_EMBEDDING_MODEL', 'text-embedding-004');
         }
 
@@ -118,6 +120,18 @@ class GeminiAIService implements AIService
     private function makeStreamingRequest(array $payload)
     {
         $url = "{$this->baseUrl}/models/{$this->model}:streamGenerateContent?key={$this->apiKey}&alt=sse";
+
+        // Debug logging
+        Log::info('Gemini API Request', [
+            'model' => $this->model,
+            'url' => str_replace($this->apiKey, 'REDACTED', $url),
+            'payload_structure' => [
+                'has_contents' => isset($payload['contents']),
+                'has_tools' => isset($payload['tools']),
+                'has_systemInstruction' => isset($payload['systemInstruction']),
+                'tools_count' => isset($payload['tools'][0]['functionDeclarations']) ? count($payload['tools'][0]['functionDeclarations']) : 0
+            ]
+        ]);
 
         $response = $this->client->post($url, ['json' => $payload, 'stream' => true]);
         $body = $response->getBody();

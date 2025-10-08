@@ -28,13 +28,13 @@ class RAGService
                 'functionDeclarations' => [
                     [
                         'name' => 'search_general',
-                        'description' => 'Foydalanuvchi ish, vakansiya, yangilik, trening, hujjat yoki biror mavzu haqida ma\'lumot so\'raganda ishlatiladi. Umumiy qidiruv uchun eng yaxshi vosita.',
+                        'description' => 'Umumiy qidiruv vositasi. Ish, vakansiya, yangilik, trening, hujjat yoki kitoblardan ma\'lumot qidiradi. Kitoblarning har bir bo\'limini alohida izlaydi va eng mos keladigan qismlarini topadi. Foydalanuvchi "kitobda nima yozilgan", "hujjatning qayerida aytilgan" kabi savollar bersa ham aniq javob beradi.',
                         'parameters' => [
                             'type' => 'object',
                             'properties' => [
                                 'query' => [
                                     'type' => 'string',
-                                    'description' => 'Qidiruv so\'rovi (masalan, "PHP dasturchi Toshkentda", "so\'nggi yangiliklar", "marketing treninglari").'
+                                    'description' => 'Qidiruv so\'rovi. Masalan: "PHP dasturchi Toshkentda", "so\'nggi yangiliklar", "marketing treninglari", "kitobda motivatsiya haqida nima yozilgan", "hujjatning 5-bo\'limida qanday ma\'lumot bor".'
                                 ]
                             ],
                             'required' => ['query']
@@ -47,7 +47,7 @@ class RAGService
                     ],
                     [
                         'name' => 'get_platform_stats',
-                        'description' => 'Foydalanuvchi platforma statistikasi (ishlar soni, yangiliklar soni va hokazo) haqida so\'raganda ishlatiladi.',
+                        'description' => 'Foydalanuvchi platforma statistikasi (ishlar soni, yangiliklar soni, kitoblar soni va hokazo) haqida so\'raganda ishlatiladi.',
                         'parameters' => ['type' => 'object', 'properties' => []]
                     ]
                 ]
@@ -76,6 +76,7 @@ class RAGService
 
     /**
      * Performs a general semantic search across multiple tables.
+     * Now includes DEEP chunk-level search for ai_documents!
      */
     private function searchGeneral(string $query): array
     {
@@ -88,9 +89,10 @@ class RAGService
 
         try {
             $queryEmbedding = $this->aiService->embed($query);
-            $tables = ['jobs', 'news', 'trainings', 'ai_documents'];
 
-            foreach ($tables as $table) {
+            // Search in simple tables (jobs, news, trainings)
+            $simpleTables = ['jobs', 'news', 'trainings'];
+            foreach ($simpleTables as $table) {
                 $items = DB::table($table)->whereNotNull('embedding')->get();
                 if ($items->isEmpty()) continue;
 
@@ -107,6 +109,12 @@ class RAGService
                 }
             }
 
+            // PROFESSIONAL CHUNK-LEVEL SEARCH for ai_documents
+            $documentChunks = $this->searchDocumentChunks($queryEmbedding);
+            foreach ($documentChunks as $chunk) {
+                $allResults[] = $chunk;
+            }
+
             if (empty($allResults)) {
                 return ['content' => 'Bu mavzuda hech narsa topilmadi.', 'sources' => []];
             }
@@ -114,7 +122,7 @@ class RAGService
             // Sort by similarity and take top 5
             usort($allResults, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
             $topResults = array_slice($allResults, 0, 5);
-            
+
             $content = "Topilgan ma'lumotlar:\n\n";
             foreach ($topResults as $result) {
                 $content .= $result['content'] . "\n\n";
@@ -129,6 +137,111 @@ class RAGService
         } catch (\Exception $e) {
             Log::error('RAG searchGeneral error', ['error' => $e->getMessage()]);
             return ['content' => 'Qidiruvda xatolik yuz berdi.', 'sources' => []];
+        }
+    }
+
+    /**
+     * PROFESSIONAL CHUNK-LEVEL SEMANTIC SEARCH
+     * Searches through EVERY chunk of EVERY document to find the most relevant pieces.
+     * This allows AI to answer questions about specific parts of books/documents.
+     *
+     * @param array $queryEmbedding The embedding vector of the user's query
+     * @param float $threshold Minimum similarity score (default: 0.4)
+     * @return array Array of relevant chunks with metadata
+     */
+    private function searchDocumentChunks(array $queryEmbedding, float $threshold = 0.4): array
+    {
+        $documents = DB::table('ai_documents')
+            ->whereNotNull('embedding')
+            ->whereNotNull('content')
+            ->get();
+
+        if ($documents->isEmpty()) {
+            return [];
+        }
+
+        $chunkResults = [];
+
+        foreach ($documents as $doc) {
+            $embeddings = json_decode($doc->embedding, true);
+
+            // Skip if not a valid array of embeddings
+            if (!is_array($embeddings) || empty($embeddings)) {
+                continue;
+            }
+
+            // Check if this is a multi-chunk document (array of arrays)
+            $isMultiChunk = isset($embeddings[0]) && is_array($embeddings[0]);
+
+            if (!$isMultiChunk) {
+                // Single embedding - treat entire document as one chunk
+                $similarity = $this->cosineSimilarity($queryEmbedding, $embeddings);
+
+                if ($similarity > $threshold) {
+                    $chunkResults[] = [
+                        'content' => $this->formatDocumentChunk($doc, 0, 1, mb_substr($doc->content, 0, 800)),
+                        'similarity' => $similarity,
+                        'url' => null,
+                        'title' => $doc->title ?? 'Noma\'lum hujjat'
+                    ];
+                }
+            } else {
+                // Multi-chunk document - search each chunk individually
+                $totalChunks = count($embeddings);
+                $chunkSize = intval(ceil(mb_strlen($doc->content) / $totalChunks));
+
+                foreach ($embeddings as $chunkIndex => $chunkEmbedding) {
+                    if (!is_array($chunkEmbedding) || empty($chunkEmbedding)) {
+                        continue;
+                    }
+
+                    $similarity = $this->cosineSimilarity($queryEmbedding, $chunkEmbedding);
+
+                    if ($similarity > $threshold) {
+                        // Extract the actual text of this chunk
+                        $startPos = $chunkIndex * $chunkSize;
+                        $chunkText = mb_substr($doc->content, $startPos, $chunkSize);
+
+                        // Clean and trim chunk text for display (max 800 chars)
+                        $displayText = mb_substr(trim($chunkText), 0, 800);
+                        if (mb_strlen($chunkText) > 800) {
+                            $displayText .= '...';
+                        }
+
+                        $chunkResults[] = [
+                            'content' => $this->formatDocumentChunk($doc, $chunkIndex + 1, $totalChunks, $displayText),
+                            'similarity' => $similarity,
+                            'url' => null,
+                            'title' => $doc->title ?? 'Noma\'lum hujjat',
+                            'chunk_index' => $chunkIndex,
+                            'document_id' => $doc->id
+                        ];
+                    }
+                }
+            }
+        }
+
+        // Sort by similarity and return top 3 chunks (to leave room for other results)
+        usort($chunkResults, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
+        return array_slice($chunkResults, 0, 3);
+    }
+
+    /**
+     * Formats a document chunk for display
+     */
+    private function formatDocumentChunk($document, int $chunkNumber, int $totalChunks, string $text): string
+    {
+        $title = $document->title ?? 'Noma\'lum hujjat';
+        $category = $document->category ?? 'umumiy';
+
+        if ($totalChunks > 1) {
+            return "📚 **{$title}** (bo'lim {$chunkNumber}/{$totalChunks})\n" .
+                   "Kategoriya: {$category}\n\n" .
+                   "{$text}";
+        } else {
+            return "📚 **{$title}**\n" .
+                   "Kategoriya: {$category}\n\n" .
+                   "{$text}";
         }
     }
 
