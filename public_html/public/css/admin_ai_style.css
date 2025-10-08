@@ -193,6 +193,7 @@
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     transition: background-color 0.2s ease;
 }
 

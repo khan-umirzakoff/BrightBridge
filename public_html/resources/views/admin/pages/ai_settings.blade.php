@@ -1,7 +1,22 @@
 @extends("admin.main")
 
 @section('head')
-{{-- This section is intentionally left blank to demonstrate that page-specific styles can be added here. --}}
+<style>
+    .provider-check-icon {
+        visibility: hidden;
+        width: 20px;
+        height: 20px;
+        color: var(--ai-success-color);
+    }
+    .ai-provider-dropdown-item.selected .provider-check-icon {
+        visibility: visible;
+    }
+    /* This helps align the text and icon correctly */
+    .ai-provider-dropdown-item > .provider-name-wrapper {
+        display: flex;
+        align-items: center;
+    }
+</style>
 @endsection
 
 @section('content')
@@ -48,12 +63,18 @@
                         </button>
                         <div class="ai-provider-dropdown-content" id="ai_provider_dropdown_content">
                             <div class="ai-provider-dropdown-item" data-provider="openai">
-                                <svg class="ai-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path fill="currentColor" d="M352 256c0 22.2-1.2 43.6-3.3 64H147.3c-2.1-20.4-3.3-41.8-3.3-64s1.2-43.6 3.3-64H348.7c2.1 20.4 3.3 41.8 3.3 64zm28.8-96H115.2C69.3 160 32 204.2 32 256s37.3 96 83.2 96h233.6c45.9 0 83.2-44.2 83.2-96s-37.3-96-83.2-96zM496 256c0-114.9-111.6-208-248-208S0 141.1 0 256s111.6 208 248 208 248-93.1 248-208zM100.3 400H208v48c0 17.7-14.3 32-32 32h-48c-17.7 0-32-14.3-32-32v-48zm295.4 0H288v48c0 17.7 14.3 32 32 32h48c17.7 0 32-14.3 32-32v-48z"/></svg>
-                                OpenAI
+                                <div class="provider-name-wrapper">
+                                    <svg class="ai-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path fill="currentColor" d="M352 256c0 22.2-1.2 43.6-3.3 64H147.3c-2.1-20.4-3.3-41.8-3.3-64s1.2-43.6 3.3-64H348.7c2.1 20.4 3.3 41.8 3.3 64zm28.8-96H115.2C69.3 160 32 204.2 32 256s37.3 96 83.2 96h233.6c45.9 0 83.2-44.2 83.2-96s-37.3-96-83.2-96zM496 256c0-114.9-111.6-208-248-208S0 141.1 0 256s111.6 208 248 208 248-93.1 248-208zM100.3 400H208v48c0 17.7-14.3 32-32 32h-48c-17.7 0-32-14.3-32-32v-48zm295.4 0H288v48c0 17.7 14.3 32 32 32h48c17.7 0 32-14.3 32-32v-48z"/></svg>
+                                    OpenAI
+                                </div>
+                                <svg class="provider-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                             </div>
                             <div class="ai-provider-dropdown-item" data-provider="gemini">
-                               <svg class="ai-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="currentColor" d="M152.3 34.6c-5.1-12.8-20.5-12.8-25.6 0L5.3 394.6C-1.5 412.8 13 432 32 432h384c19 0 33.5-19.2 26.7-37.4L295.7 34.6c-5.1-12.8-20.5-12.8-25.6 0l-117.8 360zM224 288c-13.3 0-24 10.7-24 24s10.7 24 24 24 24-10.7 24-24-10.7-24-24-24zm-32-80c0-17.7 14.3-32 32-32s32 14.3 32 32v64c0 17.7-14.3 32-32 32s-32-14.3-32-32v-64z"/></svg>
-                                Google Gemini
+                               <div class="provider-name-wrapper">
+                                   <svg class="ai-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="currentColor" d="M152.3 34.6c-5.1-12.8-20.5-12.8-25.6 0L5.3 394.6C-1.5 412.8 13 432 32 432h384c19 0 33.5-19.2 26.7-37.4L295.7 34.6c-5.1-12.8-20.5-12.8-25.6 0l-117.8 360zM224 288c-13.3 0-24 10.7-24 24s10.7 24 24 24 24-10.7 24-24-10.7-24-24-24zm-32-80c0-17.7 14.3-32 32-32s32 14.3 32 32v64c0 17.7-14.3 32-32 32s-32-14.3-32-32v-64z"/></svg>
+                                   Google Gemini
+                               </div>
+                               <svg class="provider-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                             </div>
                         </div>
                     </div>
@@ -138,7 +159,16 @@ document.addEventListener('DOMContentLoaded', function () {
     function selectProvider(provider) {
         providerInput.value = provider;
         const selectedItem = document.querySelector(`.ai-provider-dropdown-item[data-provider="${provider}"]`);
-        selectedProviderText.innerHTML = selectedItem.innerHTML;
+
+        // Update the button text with just the text content of the wrapper, not the checkmark
+        selectedProviderText.innerHTML = selectedItem.querySelector('.provider-name-wrapper').innerHTML;
+
+        // Update active status for checkmark
+        providerItems.forEach(item => {
+            item.classList.remove('selected');
+        });
+        selectedItem.classList.add('selected');
+
         for (const key in configSections) {
             configSections[key].classList.toggle('active', key === provider);
         }
@@ -190,7 +220,7 @@ function testConnection(provider, button) {
 
     const originalHtml = button.innerHTML;
     button.disabled = true;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
 
     fetch('{{ route("ai-settings.test") }}', {
         method: 'POST',
@@ -207,7 +237,7 @@ function testConnection(provider, button) {
         if (data.success) {
             button.classList.remove('btn-info', 'btn-danger');
             button.classList.add('btn-success');
-            button.innerHTML = '<i class="fas fa-check"></i>';
+            button.innerHTML = '<i class="fas fa-check"></i> Connected';
             setTimeout(() => {
                 button.classList.remove('btn-success');
                 button.classList.add('btn-info');
@@ -216,7 +246,7 @@ function testConnection(provider, button) {
         } else {
             button.classList.remove('btn-info');
             button.classList.add('btn-danger');
-            button.innerHTML = '<i class="fas fa-times"></i>';
+            button.innerHTML = '<i class="fas fa-times"></i> Failed';
             alert('Connection failed: ' + data.message);
             setTimeout(() => {
                 button.classList.remove('btn-danger');
