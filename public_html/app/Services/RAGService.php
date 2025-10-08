@@ -4,618 +4,233 @@ namespace App\Services;
 
 use App\Contracts\AIService;
 use App\Jobs;
-use App\Company;
-use App\Registry;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class RAGService
 {
     protected $aiService;
+    protected $baseUrl;
 
     public function __construct(AIService $aiService)
     {
         $this->aiService = $aiService;
+        $this->baseUrl = rtrim(env('APP_URL', 'http://localhost:8000'), '/');
     }
 
-    public function buildContext(string $userMessage): string
+    /**
+     * Declares the tools (functions) available to the AI.
+     */
+    public function getToolDeclarations(): array
     {
-        $context = [];
-        $messageLower = mb_strtolower($userMessage);
-
-        // 1. Ish qidirish
-        $jobsContext = $this->searchJobs($messageLower);
-        if (!empty($jobsContext)) {
-            $context[] = $jobsContext;
-        }
-
-        // 2. Kompaniya qidirish
-        if ($this->isCompanyQuery($messageLower)) {
-            $companyContext = $this->searchCompanies($messageLower);
-            if (!empty($companyContext)) {
-                $context[] = $companyContext;
-            }
-        }
-
-        // 3. Ishchilar qidirish (agar kompaniya qidirsa)
-        if ($this->isCandidateQuery($messageLower)) {
-            $candidateContext = $this->searchCandidates($messageLower);
-            if (!empty($candidateContext)) {
-                $context[] = $candidateContext;
-            }
-        }
-
-        // 4. News/Yangiliklar
-        if ($this->isNewsQuery($messageLower)) {
-            $newsContext = $this->searchNews($messageLower);
-            if (!empty($newsContext)) {
-                $context[] = $newsContext;
-            }
-        }
-
-        // 5. Trainings/Treninglar
-        if ($this->isTrainingQuery($messageLower)) {
-            $trainingContext = $this->searchTrainings($messageLower);
-            if (!empty($trainingContext)) {
-                $context[] = $trainingContext;
-            }
-        }
-
-        // 6. Custom Documents (AI Knowledge Base)
-        $documentContext = $this->searchDocuments($messageLower);
-        if (!empty($documentContext)) {
-            $context[] = $documentContext;
-        }
-
-        // 7. Umumiy statistika
-        $statsContext = $this->getStatsContext();
-        if (!empty($statsContext)) {
-            $context[] = $statsContext;
-        }
-
-        return implode("\n\n---\n\n", $context);
+        return [
+            [
+                'functionDeclarations' => [
+                    [
+                        'name' => 'search_general',
+                        'description' => 'Foydalanuvchi ish, vakansiya, yangilik, trening, hujjat yoki biror mavzu haqida ma\'lumot so\'raganda ishlatiladi. Umumiy qidiruv uchun eng yaxshi vosita.',
+                        'parameters' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'query' => [
+                                    'type' => 'string',
+                                    'description' => 'Qidiruv so\'rovi (masalan, "PHP dasturchi Toshkentda", "so\'nggi yangiliklar", "marketing treninglari").'
+                                ]
+                            ],
+                            'required' => ['query']
+                        ]
+                    ],
+                    [
+                        'name' => 'get_contact_info',
+                        'description' => 'Foydalanuvchi aniq kontakt ma\'lumotlarini (telefon, manzil, email) so\'raganda ishlatiladi.',
+                        'parameters' => ['type' => 'object', 'properties' => []]
+                    ],
+                    [
+                        'name' => 'get_platform_stats',
+                        'description' => 'Foydalanuvchi platforma statistikasi (ishlar soni, yangiliklar soni va hokazo) haqida so\'raganda ishlatiladi.',
+                        'parameters' => ['type' => 'object', 'properties' => []]
+                    ]
+                ]
+            ]
+        ];
     }
 
-    protected function searchJobs(string $query): string
+    /**
+     * Executes the tool requested by the AI.
+     */
+    public function executeTool(string $functionName, array $args): array
     {
-        // SEMANTIC SEARCH (agar embedding mavjud bo'lsa)
+        Log::info('Executing tool', ['name' => $functionName, 'args' => $args]);
+        switch ($functionName) {
+            case 'search_general':
+                return $this->searchGeneral($args['query'] ?? '');
+            case 'get_contact_info':
+                return $this->getContactInfo();
+            case 'get_platform_stats':
+                return $this->getPlatformStats();
+            default:
+                Log::warning('Unknown tool called', ['name' => $functionName]);
+                return ['content' => 'Noma\'lum buyruq.', 'sources' => []];
+        }
+    }
+
+    /**
+     * Performs a general semantic search across multiple tables.
+     */
+    private function searchGeneral(string $query): array
+    {
+        if (empty($query)) {
+            return ['content' => 'Qidiruv uchun so\'rov bo\'sh.', 'sources' => []];
+        }
+
+        $allResults = [];
+        $processedIds = [];
+
         try {
-            Log::info('Semantic search boshlandi', ['query' => $query]);
             $queryEmbedding = $this->aiService->embed($query);
-            Log::info('Query embedding yaratildi', ['dimension' => count($queryEmbedding)]);
-            
-            $semanticResults = Jobs::searchSimilar($queryEmbedding, 5);
-            Log::info('Semantic results', ['count' => count($semanticResults)]);
-            
-            if (!empty($semanticResults)) {
-                foreach ($semanticResults as $result) {
-                    Log::info('Similarity', [
-                        'job' => $result['job']->title,
-                        'similarity' => $result['similarity']
-                    ]);
-                }
-                
-                $jobs = collect($semanticResults)
-                    ->filter(fn($r) => $r['similarity'] > 0.4)
-                    ->pluck('job');
-                
-                if ($jobs->isNotEmpty()) {
-                    Log::info('Semantic search topdi', ['count' => $jobs->count()]);
-                    return $this->formatJobsContext($jobs, "Semantic Search - Eng mos");
+            $tables = ['jobs', 'news', 'trainings', 'ai_documents'];
+
+            foreach ($tables as $table) {
+                $items = DB::table($table)->whereNotNull('embedding')->get();
+                if ($items->isEmpty()) continue;
+
+                $results = $this->calculateSimilarity($items, $queryEmbedding);
+                foreach ($results as $r) {
+                    $itemId = "{$table}_{$r['item']->id}";
+                    if ($r['similarity'] > 0.4 && !in_array($itemId, $processedIds)) {
+                        $allResults[] = array_merge(
+                            $this->formatItemContent($r['item'], $table),
+                            ['similarity' => $r['similarity']]
+                        );
+                        $processedIds[] = $itemId;
+                    }
                 }
             }
+
+            if (empty($allResults)) {
+                return ['content' => 'Bu mavzuda hech narsa topilmadi.', 'sources' => []];
+            }
+
+            // Sort by similarity and take top 5
+            usort($allResults, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
+            $topResults = array_slice($allResults, 0, 5);
+            
+            $content = "Topilgan ma'lumotlar:\n\n";
+            foreach ($topResults as $result) {
+                $content .= $result['content'] . "\n\n";
+            }
+
+            $sources = array_map(function($result) {
+                return ['url' => $result['url'], 'title' => $result['title']];
+            }, array_filter($topResults, fn($r) => !empty($r['url'])));
+
+            return ['content' => trim($content), 'sources' => $sources];
+
         } catch (\Exception $e) {
-            Log::error('Semantic search xato', ['error' => $e->getMessage()]);
+            Log::error('RAG searchGeneral error', ['error' => $e->getMessage()]);
+            return ['content' => 'Qidiruvda xatolik yuz berdi.', 'sources' => []];
         }
-
-        // KEYWORD SEARCH (fallback yoki embedding bo'lmasa)
-        $location = $this->extractLocation($query);
-        $jobType = $this->extractJobType($query);
-        $skills = $this->extractSkills($query);
-
-        $jobsQuery = Jobs::where('status', 1);
-
-        // Location filter
-        if ($location) {
-            $jobsQuery->where('location', 'LIKE', "%{$location}%");
-        }
-
-        // Type filter
-        if ($jobType) {
-            $jobsQuery->where('type', 'LIKE', "%{$jobType}%");
-        }
-
-        // Skills/Title filter
-        if (!empty($skills)) {
-            $jobsQuery->where(function($q) use ($skills) {
-                foreach ($skills as $skill) {
-                    $q->orWhere('title', 'LIKE', "%{$skill}%")
-                      ->orWhere('info', 'LIKE', "%{$skill}%")
-                      ->orWhere('quals', 'LIKE', "%{$skill}%");
-                }
-            });
-        }
-
-        $jobs = $jobsQuery->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get(['id', 'title', 'company', 'location', 'type', 'salary', 'info']);
-
-        if ($jobs->isEmpty()) {
-            // Agar aniq topilmasa, eng yangi 3tani ko'rsat
-            $jobs = Jobs::where('status', 1)
-                ->orderBy('created_at', 'desc')
-                ->limit(3)
-                ->get(['id', 'title', 'company', 'location', 'type', 'salary', 'info']);
-        }
-
-        if ($jobs->isEmpty()) {
-            return '';
-        }
-
-        return $this->formatJobsContext($jobs, "Keyword Search");
     }
 
-    protected function formatJobsContext($jobs, $searchType = "Topilgan"): string
+    /**
+     * Retrieves high-priority contact information.
+     */
+    private function getContactInfo(): array
     {
-        $context = "## {$searchType} Ish E'lonlari:\n\n";
-        $baseUrl = env('APP_URL', 'http://localhost:8000');
-        
-        foreach ($jobs as $job) {
-            $jobUrl = "{$baseUrl}/job_details/{$job->id}";
-            
-            $context .= "**{$job->title}**\n";
-            $context .= "- Kompaniya: {$job->company}\n";
-            $context .= "- Joylashuv: {$job->location}\n";
-            $context .= "- Turi: {$job->type}\n";
-            if (!empty($job->salary)) {
-                $context .= "- Maosh: {$job->salary}\n";
-            }
-            if (!empty($job->info)) {
-                $context .= "- Info: " . mb_substr(strip_tags($job->info), 0, 150) . "...\n";
-            }
-            $context .= "- [Batafsil ko'rish]({$jobUrl})\n\n";
+        $facts = DB::table('ai_knowledge')
+            ->where('is_active', true)
+            ->where('category', 'contact')
+            ->orderBy('priority', 'desc')
+            ->get();
+
+        if ($facts->isEmpty()) {
+            return ['content' => 'Kontakt ma\'lumotlari topilmadi.', 'sources' => []];
         }
 
-        return $context;
+        $content = "Asosiy kontakt ma'lumotlari:\n";
+        foreach ($facts as $fact) {
+            $content .= "- {$fact->key}: {$fact->value}\n";
+        }
+        return ['content' => trim($content), 'sources' => []];
     }
 
-    protected function searchCompanies(string $query): string
-    {
-        $companies = Company::where('name', 'LIKE', "%{$query}%")
-            ->orWhere('description', 'LIKE', "%{$query}%")
-            ->limit(3)
-            ->get(['id', 'name', 'email', 'phone', 'address']);
-
-        if ($companies->isEmpty()) {
-            return '';
-        }
-
-        $context = "## Topilgan Kompaniyalar:\n\n";
-        
-        foreach ($companies as $company) {
-            $context .= "**{$company->name}**\n";
-            if (!empty($company->phone)) $context .= "- Telefon: {$company->phone}\n";
-            if (!empty($company->email)) $context .= "- Email: {$company->email}\n";
-            if (!empty($company->address)) $context .= "- Manzil: {$company->address}\n";
-            $context .= "\n";
-        }
-
-        return $context;
-    }
-
-    protected function searchCandidates(string $query): string
-    {
-        $candidates = Registry::whereNotNull('cv')
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get(['id', 'name', 'surname', 'email', 'phone', 'skills']);
-
-        if ($candidates->isEmpty()) {
-            return '';
-        }
-
-        $context = "## Mavjud Nomzodlar:\n\n";
-        
-        foreach ($candidates as $candidate) {
-            $context .= "**{$candidate->name} {$candidate->surname}**\n";
-            if (!empty($candidate->skills)) $context .= "- Ko'nikmalar: {$candidate->skills}\n";
-            if (!empty($candidate->email)) $context .= "- Email: {$candidate->email}\n";
-            $context .= "\n";
-        }
-
-        return $context;
-    }
-
-    protected function extractLocation(string $query): ?string
-    {
-        $locations = ['toshkent', 'samarqand', 'buxoro', 'farg\'ona', 'namangan', 'andijon', 'qarshi', 'nukus'];
-        
-        foreach ($locations as $location) {
-            if (mb_strpos($query, $location) !== false) {
-                return $location;
-            }
-        }
-        
-        return null;
-    }
-
-    protected function extractJobType(string $query): ?string
-    {
-        $types = [
-            'full time' => 'full',
-            'part time' => 'part',
-            'remote' => 'remote',
-            'masofaviy' => 'remote',
-            'to\'liq' => 'full',
-        ];
-        
-        foreach ($types as $keyword => $type) {
-            if (mb_strpos($query, $keyword) !== false) {
-                return $type;
-            }
-        }
-        
-        return null;
-    }
-
-    protected function extractSkills(string $query): array
-    {
-        $skills = [
-            'php', 'laravel', 'javascript', 'react', 'vue', 'node', 'python', 'java',
-            'developer', 'dasturchi', 'dizayner', 'designer', 'manager', 'menejer',
-            'accountant', 'buxgalter', 'marketing', 'sales', 'sotuv'
-        ];
-        
-        $found = [];
-        
-        foreach ($skills as $skill) {
-            if (mb_strpos($query, $skill) !== false) {
-                $found[] = $skill;
-            }
-        }
-        
-        return $found;
-    }
-
-    protected function isCompanyQuery(string $message): bool
-    {
-        $keywords = ['kompaniya', 'company', 'firma', 'tashkilot'];
-        foreach ($keywords as $keyword) {
-            if (mb_strpos($message, $keyword) !== false) return true;
-        }
-        return false;
-    }
-
-    protected function isCandidateQuery(string $message): bool
-    {
-        $keywords = ['ishchi', 'nomzod', 'candidate', 'xodim', 'kadr'];
-        foreach ($keywords as $keyword) {
-            if (mb_strpos($message, $keyword) !== false) return true;
-        }
-        return false;
-    }
-
-    protected function searchNews(string $query): string
+    /**
+     * Retrieves platform statistics.
+     */
+    private function getPlatformStats(): array
     {
         try {
-            $queryEmbedding = $this->aiService->embed($query);
-            
-            $news = DB::table('news')->whereNotNull('embedding')->get();
-            $results = $this->calculateSimilarity($news, $queryEmbedding);
-            
-            if (!empty($results)) {
-                $context = "## Tegishli Yangiliklar:\n\n";
-                foreach ($results as $r) {
-                    if ($r['similarity'] > 0.5) {
-                        $context .= "**{$r['item']->title}**\n";
-                        $context .= mb_substr(strip_tags($r['item']->desc ?? ''), 0, 200) . "...\n\n";
-                    }
-                }
-                return $context;
+            $stats = [
+                "Aktiv vakansiyalar" => DB::table('jobs')->where('status', 1)->count(),
+                "Yangiliklar" => DB::table('news')->count(),
+                "Treninglar" => DB::table('trainings')->count(),
+                "Hujjatlar/Kitoblar" => DB::table('ai_documents')->count(),
+            ];
+            $content = "Platforma bo'yicha umumiy statistika:\n";
+            foreach ($stats as $key => $value) {
+                $content .= "- {$key}: {$value} ta\n";
             }
-        } catch (\Exception $e) {}
-        
-        return '';
+            return ['content' => trim($content), 'sources' => []];
+        } catch (\Exception $e) {
+            Log::error('get_platform_stats error', ['error' => $e->getMessage()]);
+            return ['content' => 'Statistikani olishda xatolik.', 'sources' => []];
+        }
     }
 
-    protected function searchTrainings(string $query): string
+    /**
+     * Formats a single item from a table into a structured array.
+     */
+    protected function formatItemContent($item, string $table): array
     {
-        try {
-            $queryEmbedding = $this->aiService->embed($query);
-            
-            $trainings = DB::table('trainings')->whereNotNull('embedding')->get();
-            $results = $this->calculateSimilarity($trainings, $queryEmbedding);
-            
-            if (!empty($results)) {
-                $context = "## Tegishli Treninglar:\n\n";
-                foreach ($results as $r) {
-                    if ($r['similarity'] > 0.5) {
-                        $context .= "**{$r['item']->title}**\n";
-                        $context .= mb_substr(strip_tags($r['item']->desc ?? ''), 0, 200) . "...\n\n";
-                    }
-                }
-                return $context;
-            }
-        } catch (\Exception $e) {}
-        
-        return '';
+        $content = '';
+        $url = null;
+        $title = $item->title ?? 'Noma\'lum';
+
+        switch ($table) {
+            case 'jobs':
+                $url = "{$this->baseUrl}/job_details/{$item->id}";
+                $content = "Ish e'loni: **{$item->title}**\n- Kompaniya: {$item->company}\n- Joylashuv: {$item->location}";
+                break;
+            case 'news':
+                $url = "{$this->baseUrl}/single-blog/{$item->id}"; // Assuming single-blog is the correct route for news
+                $content = "Yangilik: **{$item->title}**\n" . mb_substr(strip_tags($item->desc ?? ''), 0, 150) . "...";
+                break;
+            case 'trainings':
+                $url = "{$this->baseUrl}/trainings/{$item->id}";
+                $content = "Trening: **{$item->title}**";
+                break;
+            case 'ai_documents':
+                $content = "Hujjat: **{$item->title}**\n- Kategoriya: {$item->category}\n" . mb_substr(strip_tags($item->description ?? ''), 0, 150) . "...";
+                break;
+        }
+
+        return ['content' => $content, 'url' => $url, 'title' => $title];
     }
 
-    protected function calculateSimilarity($items, $queryEmbedding): array
+    private function calculateSimilarity($items, $queryEmbedding): array
     {
         $results = [];
-
         foreach ($items as $item) {
-            $itemEmbeddings = json_decode($item->embedding, true);
-            if (!is_array($itemEmbeddings)) continue;
-
-            $maxSimilarity = 0.0;
-
-            // If it's an array of embeddings (chunks), find the max similarity
-            if (is_array($itemEmbeddings) && isset($itemEmbeddings[0]) && is_array($itemEmbeddings[0])) {
-                foreach ($itemEmbeddings as $emb) {
-                    if (is_array($emb)) {
-                        $sim = $this->cosineSimilarity($queryEmbedding, $emb);
-                        $maxSimilarity = max($maxSimilarity, $sim);
-                    }
-                }
-            } else {
-                // Single embedding
-                $maxSimilarity = $this->cosineSimilarity($queryEmbedding, $itemEmbeddings);
+            $itemEmbedding = json_decode($item->embedding, true);
+            if (is_array($itemEmbedding) && !empty($itemEmbedding)) {
+                 $results[] = ['item' => $item, 'similarity' => $this->cosineSimilarity($queryEmbedding, $itemEmbedding)];
             }
-
-            $results[] = ['item' => $item, 'similarity' => $maxSimilarity];
         }
-
         usort($results, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
-        return array_slice($results, 0, 3);
+        return array_slice($results, 0, 5);
     }
 
-    protected function cosineSimilarity(array $a, array $b): float
+    private function cosineSimilarity(array $a, array $b): float
     {
-        if (count($a) !== count($b)) return 0.0;
-        $dot = $magA = $magB = 0;
-        for ($i = 0; $i < count($a); $i++) {
+        $dot = $magA = $magB = 0.0;
+        $len = min(count($a), count($b));
+        for ($i = 0; $i < $len; $i++) {
             $dot += $a[$i] * $b[$i];
             $magA += $a[$i] * $a[$i];
             $magB += $b[$i] * $b[$i];
         }
         $magA = sqrt($magA);
         $magB = sqrt($magB);
-        return ($magA && $magB) ? $dot / ($magA * $magB) : 0.0;
-    }
-
-    protected function isNewsQuery(string $message): bool
-    {
-        $keywords = ['yangilik', 'news', 'xabar', 'voqea'];
-        foreach ($keywords as $kw) {
-            if (mb_strpos($message, $kw) !== false) return true;
-        }
-        return false;
-    }
-
-    protected function isTrainingQuery(string $message): bool
-    {
-        $keywords = ['trening', 'training', 'o\'quv', 'kurs', 'ta\'lim'];
-        foreach ($keywords as $kw) {
-            if (mb_strpos($message, $kw) !== false) return true;
-        }
-        return false;
-    }
-
-    protected function getStatsContext(): string
-    {
-        try {
-            $totalJobs = Jobs::where('status', 1)->count();
-            $totalNews = DB::table('news')->count();
-            $totalTrainings = DB::table('trainings')->count();
-            
-            return "## Platforma Statistikasi:\n" .
-                   "- Aktiv vakansiyalar: {$totalJobs}\n" .
-                   "- Yangiliklar: {$totalNews}\n" .
-                   "- Treninglar: {$totalTrainings}\n";
-        } catch (\Exception $e) {
-            return '';
-        }
-    }
-
-    protected function searchDocuments(string $query): string
-    {
-        try {
-            $queryEmbedding = $this->aiService->embed($query);
-
-            $documents = DB::table('ai_documents')->whereNotNull('embedding')->get();
-            Log::info('AI Documents found', ['total' => $documents->count()]);
-
-            $results = $this->calculateSimilarity($documents, $queryEmbedding);
-            Log::info('Document similarity results', ['count' => count($results)]);
-
-            if (!empty($results)) {
-                $context = "## Tegishli Hujjatlar:\n\n";
-                foreach ($results as $r) {
-                    Log::info('Document similarity', ['title' => $r['item']->title ?? 'N/A', 'similarity' => $r['similarity']]);
-                    if ($r['similarity'] > 0.3) {  // Lowered from 0.6 to 0.3
-                        $context .= "**{$r['item']->title}**\n";
-                        if (!empty($r['item']->category)) {
-                            $context .= "- Kategoriya: {$r['item']->category}\n";
-                        }
-                        if (!empty($r['item']->description)) {
-                            $context .= "- Tavsif: {$r['item']->description}\n";
-                        }
-                        $context .= "- Mazmun: " . mb_substr(strip_tags($r['item']->content ?? ''), 0, 300) . "...\n\n";
-                    }
-                }
-                return $context;
-            }
-        } catch (\Exception $e) {
-            Log::error('Document search error', ['error' => $e->getMessage()]);
-        }
-
-        return '';
-    }
-
-    private function searchDirectFacts(string $query): array
-    {
-        $queryLower = mb_strtolower($query);
-        $keywords = ['telefon', 'nomer', 'raqam', 'manzil', 'adres', 'kontakt', 'bog\'lanish', 'email', 'pochta'];
-
-        $foundKeywords = false;
-        foreach ($keywords as $keyword) {
-            if (strpos($queryLower, $keyword) !== false) {
-                $foundKeywords = true;
-                break;
-            }
-        }
-
-        if (!$foundKeywords) {
-            return [];
-        }
-
-        $facts = DB::table('ai_knowledge')
-            ->where('is_active', true)
-            ->where(function ($q) {
-                $q->where('category', 'contact')
-                  ->orWhere('priority', '>', 1);
-            })
-            ->orderBy('priority', 'desc')
-            ->get();
-
-        if ($facts->isEmpty()) {
-            return [];
-        }
-
-        $knowledge = [];
-        foreach ($facts as $fact) {
-            $knowledge[] = [
-                'content' => "**{$fact->key}**: {$fact->value}",
-                'similarity' => 1.0, // Highest priority
-                'source' => 'direct_fact',
-                'id' => "fact_{$fact->id}"
-            ];
-        }
-
-        Log::info('Direct facts found', ['count' => count($knowledge)]);
-        return $knowledge;
-    }
-
-    public function retrieve(string $query): array
-    {
-        $allResults = [];
-        $processedIds = [];
-
-        // 1. Hybrid Search: Direct Fact Search (Keyword-based)
-        $directFacts = $this->searchDirectFacts($query);
-        if (!empty($directFacts)) {
-            foreach ($directFacts as $fact) {
-                $allResults[] = $fact;
-                $processedIds[] = $fact['id'];
-            }
-        }
-
-        // 2. Hybrid Search: Semantic Search (Embedding-based)
-        try {
-            $queryEmbedding = $this->aiService->embed($query);
-
-            $tables = [
-                'ai_documents' => ['title', 'category', 'description', 'content'],
-                'ai_knowledge' => ['category', 'key', 'description', 'value'],
-                'jobs' => ['title', 'company', 'location', 'type', 'info'],
-                'news' => ['title', 'desc'],
-                'trainings' => ['title', 'desc'],
-            ];
-
-            foreach ($tables as $table => $fields) {
-                try {
-                    $items = DB::table($table)->whereNotNull('embedding')->get();
-                    if ($items->isEmpty()) continue;
-
-                    $results = $this->calculateSimilarity($items, $queryEmbedding);
-
-                    foreach ($results as $r) {
-                        $itemId = "{$table}_{$r['item']->id}";
-                        $threshold = ($table === 'ai_documents') ? 0.25 : 0.4;
-                        if ($r['similarity'] > $threshold && !in_array($itemId, $processedIds)) {
-                            $formatted = $this->formatItemContent($r['item'], $table, $fields);
-                            $allResults[] = [
-                                'content' => $formatted['content'],
-                                'url' => $formatted['url'],
-                                'title' => $formatted['title'],
-                                'similarity' => $r['similarity'],
-                                'source' => $table,
-                                'id' => $itemId
-                            ];
-                            $processedIds[] = $itemId;
-                        }
-                    }
-                } catch (\Exception $e) {
-                    Log::error("Error searching table {$table}", ['error' => $e->getMessage()]);
-                }
-            }
-        } catch (\Exception $e) {
-            Log::error('RAG retrieve (semantic part) error', ['error' => $e->getMessage()]);
-        }
-
-        usort($allResults, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
-        $knowledge = array_slice($allResults, 0, 7);
-
-        return $knowledge;
-    }
-
-    protected function formatItemContent($item, string $table, array $fields): array
-    {
-        $content = "";
-        $url = null;
-        $title = null;
-        $baseUrl = rtrim(env('APP_URL', 'http://localhost:8000'), '/');
-
-        switch ($table) {
-            case 'ai_documents':
-                $title = $item->title;
-                $content = "**{$item->title}**\n";
-                if (!empty($item->category)) $content .= "- Kategoriya: {$item->category}\n";
-                if (!empty($item->description)) $content .= "- Tavsif: {$item->description}\n";
-                $content .= "- Mazmun: " . mb_substr(strip_tags($item->content ?? ''), 0, 100000);
-                break;
-
-            case 'ai_knowledge':
-                $title = $item->key;
-                $content = "**{$item->key}** ({$item->category})\n";
-                if (!empty($item->description)) $content .= "- Tavsif: {$item->description}\n";
-                $content .= "- Qiymat: {$item->value}";
-                break;
-
-            case 'jobs':
-                $title = $item->title;
-                $url = "{$baseUrl}/job_details/{$item->id}";
-                $content = "**{$item->title}**\n";
-                $content .= "- Kompaniya: {$item->company}\n";
-                $content .= "- Joylashuv: {$item->location}\n";
-                $content .= "- Turi: {$item->type}\n";
-                if (!empty($item->info)) $content .= "- Ma'lumot: " . mb_substr(strip_tags($item->info), 0, 1000) . "...\n";
-                $content .= "- [Batafsil]({$url})";
-                break;
-
-            case 'news':
-                $title = $item->title;
-                $url = "{$baseUrl}/news/{$item->id}";
-                $content = "**{$item->title}**\n";
-                $content .= "- Yangilik: " . mb_substr(strip_tags($item->desc ?? ''), 0, 2000) . "...\n";
-                $content .= "- [Batafsil]({$url})";
-                break;
-
-            case 'trainings':
-                $title = $item->title;
-                $url = "{$baseUrl}/trainings/{$item->id}";
-                $content = "**{$item->title}**\n";
-                $content .= "- Trening: " . mb_substr(strip_tags($item->desc ?? ''), 0, 2000) . "...\n";
-                $content .= "- [Batafsil]({$url})";
-                break;
-
-            default:
-                $title = "Noma'lum manba";
-                $content = json_encode($item);
-        }
-
-        return ['content' => $content, 'url' => $url, 'title' => $title];
+        return ($magA > 0 && $magB > 0) ? $dot / ($magA * $magB) : 0.0;
     }
 }

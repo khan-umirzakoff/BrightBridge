@@ -16,6 +16,7 @@ Route::get('/cv', [CVController::class, 'cv'])->name('cv');
 Route::get('/jobs', [IndexController::class, 'jobs'])->name('jobs');
 Route::get('/candidate', [IndexController::class, 'candidate'])->name('candidate');
 Route::get('/trainings', [IndexController::class, 'trainings'])->name('trainings');
+Route::get('/trainings/{id}', [IndexController::class, 'training_details'])->name('training.details');
 Route::get('/elements', [IndexController::class, 'elements'])->name('elements');
 Route::get('/blogpost', [IndexController::class, 'blogpost'])->name('blogpost');
 Route::get('/contact', [IndexController::class, 'contact'])->name('contact');

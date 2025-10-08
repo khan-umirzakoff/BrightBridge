@@ -122,14 +122,14 @@
                                     </div>
 
 <?php endif; ?>
-                     <?php  } else{?>
+                     <?php  } else {?>
 
                                      <div class="submit_btn">
                                         <a class="boxed-btn3" style="width: 100%;height: 50px" href="{{route('login')}}">Log in to Apply</a>
                                     </div>
 
 
-                        <?}?>
+                        <?php } ?>
 
 
                 </div>
