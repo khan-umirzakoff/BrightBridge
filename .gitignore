@@ -25,3 +25,4 @@ public_html/.DS_Store
 mysql.log
 *.log
 error_log
+.idx/.data
