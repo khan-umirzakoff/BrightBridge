@@ -72,7 +72,7 @@
                     <form method="POST" action="{{ route('ai-knowledge.generate-all-embeddings') }}" onsubmit="showBatchLoading()" class="mb-3">
                         @csrf
                         <button type="submit" class="ai-btn ai-btn-primary w-100">
-                           <svg class="ai-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10m7.657 8.657A8 8 0 016.343 7.343S7 9 9 10"></path></svg>
+                           <svg class="ai-icon" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12C18,14.22 16.79,16.16 15,17.2V19.5C17.89,18.15 20,15.32 20,12C20,7.58 16.42,4 12,4V6M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10Z"/></svg>
                             Generate All Embeddings
                         </button>
                         <small class="ai-form-text text-center d-block">Generates 10 per category. Press again to continue.</small>
@@ -80,7 +80,7 @@
                     <form method="POST" action="{{ route('ai-knowledge.seed-default') }}" onsubmit="return confirm('Are you sure you want to load default data? This may overwrite existing default entries.')">
                         @csrf
                         <button type="submit" class="ai-btn ai-btn-secondary w-100">
-                             <svg class="ai-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-1.169 0-2.21-1.03-1.9-2.203l.9-5.522a2 2 0 00-1.9-2.275H5.25a2 2 0 01-2-2V6a2 2 0 012-2h4.5l2.5-4.5a2 2 0 013.5 0l2.5 4.5h4.5a2 2 0 012 2v2.438a2 2 0 01-1.21 1.868l-4.242 2.121z"></path></svg>
+                             <svg class="ai-icon" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
                             Seed Default Data
                         </button>
                     </form>
@@ -181,7 +181,7 @@
                                     <form method="POST" action="{{ route('ai-knowledge.generate-embedding', $item->id) }}" style="display:inline" onsubmit="return confirm('Generate embedding for this item?')">
                                         @csrf
                                         <button type="submit" class="btn btn-sm btn-warning mr-2" title="Generate Embedding">
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:16px; height:16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10m7.657 8.657A8 8 0 016.343 7.343S7 9 9 10"></path></svg>
+                                            <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:16px; height:16px;"><path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12C18,14.22 16.79,16.16 15,17.2V19.5C17.89,18.15 20,15.32 20,12C20,7.58 16.42,4 12,4V6M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10Z"/></svg>
                                         </button>
                                     </form>
                                     @endif
