@@ -6,6 +6,7 @@ use App\Contracts\AIService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class GeminiAIService implements AIService
 {
@@ -70,7 +71,7 @@ class GeminiAIService implements AIService
                     'functionDeclarations' => [
                         [
                             'name' => 'search_jobs',
-                            'description' => 'Search for job listings in the database when user asks about jobs, vacancies, or work opportunities',
+                            'description' => 'Search for job listings when user asks about jobs, vacancies, or work opportunities. Use for filtering by location, type, skills.',
                             'parameters' => [
                                 'type' => 'object',
                                 'properties' => [
@@ -80,6 +81,29 @@ class GeminiAIService implements AIService
                                     ]
                                 ],
                                 'required' => ['query']
+                            ]
+                        ],
+                        [
+                            'name' => 'list_documents',
+                            'description' => 'List all available documents, books, guides, and knowledge base materials. Use when user asks: "what books/documents do you have?", "list all materials", "show available resources"',
+                            'parameters' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'category' => [
+                                        'type' => 'string',
+                                        'description' => 'Optional category filter'
+                                    ]
+                                ],
+                                'required' => []
+                            ]
+                        ],
+                        [
+                            'name' => 'get_platform_stats',
+                            'description' => 'Get platform statistics and overview. Use when user asks about numbers, counts, or platform overview.',
+                            'parameters' => [
+                                'type' => 'object',
+                                'properties' => [],
+                                'required' => []
                             ]
                         ]
                     ]
@@ -262,16 +286,91 @@ class GeminiAIService implements AIService
         $functionName = $functionCall['name'];
         $args = $functionCall['args'] ?? [];
 
-        if ($functionName === 'search_jobs') {
-            $ragService = app(\App\Services\RAGService::class);
-            $query = $args['query'] ?? '';
-            
-            Log::info('Executing search_jobs', ['query' => $query]);
-            
-            return $ragService->buildContext($query);
-        }
+        Log::info('Executing function', ['function' => $functionName, 'args' => $args]);
 
-        return 'Function not found';
+        switch ($functionName) {
+            case 'search_jobs':
+                $ragService = app(\App\Services\RAGService::class);
+                $query = $args['query'] ?? '';
+                return $ragService->buildContext($query);
+
+            case 'list_documents':
+                return $this->listDocuments($args['category'] ?? null);
+
+            case 'get_platform_stats':
+                return $this->getPlatformStats();
+
+            default:
+                Log::warning('Unknown function called', ['function' => $functionName]);
+                return 'Function not found';
+        }
+    }
+
+    protected function listDocuments(?string $category = null): string
+    {
+        try {
+            $query = DB::table('ai_documents')
+                ->select(['id', 'title', 'category', 'description', 'file_size', 'created_at'])
+                ->orderBy('created_at', 'desc');
+
+            if ($category) {
+                $query->where('category', 'LIKE', "%{$category}%");
+            }
+
+            $documents = $query->limit(50)->get();
+
+            if ($documents->isEmpty()) {
+                return "Hozircha hech qanday hujjat yoki kitob yuklanmagan.";
+            }
+
+            $result = "## Mavjud Hujjatlar va Kitoblar:\n\n";
+            $grouped = $documents->groupBy('category');
+
+            foreach ($grouped as $cat => $docs) {
+                $result .= "### {$cat}\n\n";
+                foreach ($docs as $doc) {
+                    $size = round($doc->file_size / 1024, 2);
+                    $result .= "**{$doc->title}**\n";
+                    if ($doc->description) {
+                        $result .= "- Tavsif: {$doc->description}\n";
+                    }
+                    $result .= "- Hajm: {$size} KB\n";
+                    $result .= "- Yuklangan: " . date('d.m.Y', strtotime($doc->created_at)) . "\n\n";
+                }
+            }
+
+            $result .= "\nJami: " . $documents->count() . " ta hujjat mavjud.";
+
+            return $result;
+
+        } catch (\Exception $e) {
+            Log::error('list_documents error', ['error' => $e->getMessage()]);
+            return "Hujjatlar ro'yxatini olishda xatolik yuz berdi.";
+        }
+    }
+
+    protected function getPlatformStats(): string
+    {
+        try {
+            $totalJobs = DB::table('jobs')->where('status', 1)->count();
+            $totalNews = DB::table('news')->count();
+            $totalTrainings = DB::table('trainings')->count();
+            $totalDocuments = DB::table('ai_documents')->count();
+            $totalKnowledge = DB::table('ai_knowledge')->where('is_active', true)->count();
+
+            $result = "## JobCare Platforma Statistikasi:\n\n";
+            $result .= "- **Aktiv vakansiyalar:** {$totalJobs} ta\n";
+            $result .= "- **Yangiliklar:** {$totalNews} ta\n";
+            $result .= "- **Treninglar:** {$totalTrainings} ta\n";
+            $result .= "- **Hujjatlar/Kitoblar:** {$totalDocuments} ta\n";
+            $result .= "- **Bilimlar bazasi:** {$totalKnowledge} ta ma'lumot\n";
+
+            return $result;
+
+        } catch (\Exception $e) {
+            Log::error('get_platform_stats error', ['error' => $e->getMessage()]);
+            return "Statistikani olishda xatolik yuz berdi.";
+        }
     }
 
     public function chatWithImage(string $prompt, string $imageBase64, array $history = []): string
