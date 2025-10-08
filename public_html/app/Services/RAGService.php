@@ -425,12 +425,16 @@ class RAGService
             $queryEmbedding = $this->aiService->embed($query);
 
             $documents = DB::table('ai_documents')->whereNotNull('embedding')->get();
+            Log::info('AI Documents found', ['total' => $documents->count()]);
+
             $results = $this->calculateSimilarity($documents, $queryEmbedding);
+            Log::info('Document similarity results', ['count' => count($results)]);
 
             if (!empty($results)) {
                 $context = "## Tegishli Hujjatlar:\n\n";
                 foreach ($results as $r) {
-                    if ($r['similarity'] > 0.6) {
+                    Log::info('Document similarity', ['title' => $r['item']->title ?? 'N/A', 'similarity' => $r['similarity']]);
+                    if ($r['similarity'] > 0.3) {  // Lowered from 0.6 to 0.3
                         $context .= "**{$r['item']->title}**\n";
                         if (!empty($r['item']->category)) {
                             $context .= "- Kategoriya: {$r['item']->category}\n";
@@ -531,7 +535,9 @@ class RAGService
                     foreach ($results as $r) {
                         $itemId = "{$table}_{$r['item']->id}";
                         // Avoid duplicates from direct search
-                        if ($r['similarity'] > 0.4 && !in_array($itemId, $processedIds)) {
+                        // Lower threshold for ai_documents (0.25), keep 0.4 for others
+                        $threshold = ($table === 'ai_documents') ? 0.25 : 0.4;
+                        if ($r['similarity'] > $threshold && !in_array($itemId, $processedIds)) {
                             $content = $this->formatItemContent($r['item'], $table, $fields);
                             $allResults[] = [
                                 'content' => $content,
@@ -568,7 +574,8 @@ class RAGService
                 $content = "**{$item->title}**\n";
                 if (!empty($item->category)) $content .= "- Kategoriya: {$item->category}\n";
                 if (!empty($item->description)) $content .= "- Tavsif: {$item->description}\n";
-                $content .= "- Mazmun: " . mb_substr(strip_tags($item->content ?? ''), 0, 50000) . "...";
+                // Increased from 50000 to 100000 for better book content coverage
+                $content .= "- Mazmun: " . mb_substr(strip_tags($item->content ?? ''), 0, 100000);
                 break;
 
             case 'ai_knowledge':
