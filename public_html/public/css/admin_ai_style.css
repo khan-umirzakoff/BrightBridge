@@ -273,3 +273,27 @@
     background-color: rgba(255, 193, 7, 0.1);
     color: #e0a800;
 }
+
+/* Progress Bar for Stats */
+.ai-progress-bar-container {
+    margin-bottom: 15px;
+}
+.ai-progress-bar-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+.ai-progress-bar-bg {
+    background-color: var(--ai-secondary-color);
+    border-radius: 20px;
+    height: 10px;
+    overflow: hidden;
+}
+.ai-progress-bar-fill {
+    background-color: var(--ai-primary-color);
+    height: 100%;
+    border-radius: 20px;
+    transition: width 0.5s ease-in-out;
+}

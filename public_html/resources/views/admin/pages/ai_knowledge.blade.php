@@ -41,15 +41,24 @@
                     <h5 class="ai-card-title">Embedding Statistics</h5>
                 </div>
                 <div class="ai-card-body">
-                    <div class="row">
-                        @foreach($stats as $table => $stat)
-                        <div class="col-6 mb-3 text-center">
-                            <h6 class="text-uppercase font-weight-bold small">{{ ucfirst(str_replace('_', ' ', $table)) }}</h6>
-                            <span class="ai-badge ai-badge-success">{{ $stat['with_embedding'] }}</span> /
-                            <span class="ai-badge">{{ $stat['total'] }}</span>
+                    @forelse($stats as $table => $stat)
+                        @php
+                            $total = $stat['total'];
+                            $embedded = $stat['with_embedding'];
+                            $percentage = $total > 0 ? round(($embedded / $total) * 100) : 0;
+                        @endphp
+                        <div class="ai-progress-bar-container">
+                            <div class="ai-progress-bar-label">
+                                <span>{{ ucfirst(str_replace('_', ' ', $table)) }}</span>
+                                <span class="text-muted">{{ $embedded }} / {{ $total }}</span>
+                            </div>
+                            <div class="ai-progress-bar-bg">
+                                <div class="ai-progress-bar-fill" style="width: {{ $percentage }}%;"></div>
+                            </div>
                         </div>
-                        @endforeach
-                    </div>
+                    @empty
+                         <p class="text-muted text-center">No statistics to display yet.</p>
+                    @endforelse
                 </div>
             </div>
 
@@ -236,7 +245,7 @@
 </div>
 
 {{-- Loading Overlay for Batch Embedding --}}
-<div id="batch-loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+<div id="batch-loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center;">
     <div class="text-center text-white">
         <div class="spinner-border text-warning" style="width: 4rem; height: 4rem;" role="status"></div>
         <h3 class="mt-4">Generating Embeddings...</h3>
