@@ -7,6 +7,7 @@ use App\Services\RAGService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Config;
 
 class GeminiAIService implements AIService
 {
@@ -18,22 +19,18 @@ class GeminiAIService implements AIService
 
     public function __construct()
     {
-        $this->client = new Client(['timeout' => 120]); // Increased timeout for potentially long requests
+        $this->client = new Client(['timeout' => 120]);
 
-        try {
-            // Priority: Database settings > .env > defaults
-            $this->apiKey = \App\AiSetting::get('gemini_api_key') ?: env('GEMINI_API_KEY');
-            $this->model = \App\AiSetting::get('gemini_model') ?: env('GEMINI_MODEL', 'gemini-flash-latest');
-            $this->embeddingModel = \App\AiSetting::get('gemini_embedding_model') ?: env('GEMINI_EMBEDDING_MODEL', 'text-embedding-004');
-        } catch (\Exception $e) {
-            // Fallback to .env if database not accessible
-            $this->apiKey = env('GEMINI_API_KEY');
-            $this->model = env('GEMINI_MODEL', 'gemini-flash-latest');
-            $this->embeddingModel = env('GEMINI_EMBEDDING_MODEL', 'text-embedding-004');
-        }
+        // Fetch settings from the dedicated config file (config/ai.php)
+        // This is the correct Laravel practice and is reliable during console commands.
+        $this->apiKey = Config::get('ai.gemini.key');
+        $this->model = Config::get('ai.gemini.model', 'gemini-flash-latest');
+        $this->embeddingModel = Config::get('ai.gemini.embedding_model', 'text-embedding-004');
 
+        // The exception is thrown here if the key is not found after loading config.
+        // This is the correct place for this check.
         if (empty($this->apiKey)) {
-            throw new \RuntimeException('Gemini API Key is not configured.');
+            throw new \RuntimeException('Gemini API Key is not configured. Please check your .env file and config/ai.php.');
         }
     }
 

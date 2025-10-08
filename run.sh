@@ -1,75 +1,67 @@
 #!/bin/bash
-# Agar biror buyruq xato bilan yakunlansa, skriptni darhol to\'xtatish
+# Agar biror buyruq xato bilan yakunlansa, skriptni darhol to'xtatish
 set -e
 
-echo "🚀 Loyiha va ma'lumotlar bazasini to'liq sozlash boshlanmoqda..."
+echo "🚀 To'liq muhitni sozlash skripti ishga tushirildi (Yakuniy, ishonchli versiya)..."
 echo "------------------------------------------------------------"
+
+# 1. Tizim va PHP sozlamalari
+echo "🐘 Tizim va PHP sozlanmoqda..."
+sudo apt-get update -y > /dev/null
+sudo apt-get install -y software-properties-common mysql-client > /dev/null
+sudo add-apt-repository ppa:ondrej/php -y > /dev/null
+sudo apt-get update -y > /dev/null
+sudo apt-get install -y php7.4 php7.4-cli php7.4-common php7.4-gd php7.4-dom php7.4-curl php7.4-mysql php7.4-mbstring php7.4-zip > /dev/null
+echo "✅ Tizim va PHP sozlandi."
 
 # Loyiha papkasiga o'tish
 cd public_html
 
-# 1. .env faylini .env.example'dan yaratish (agar mavjud bo'lmasa)
-if [ ! -f .env ]; then
-    echo "📄 .env fayli yaratilmoqda..."
-    cp .env.example .env
+# 2. Composer'ni o'rnatish
+if [ ! -f "composer.phar" ]; then
+    echo "📥 Composer yuklanmoqda..."
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    php composer-setup.php > /dev/null
+    php -r "unlink('composer-setup.php');"
 else
-    echo "👍 .env fayli allaqachon mavjud."
+    echo "👍 Composer allaqachon mavjud."
 fi
 
-# 2. Composer bog'liqliklarini o'rnatish
-echo "📦 Composer paketlari o'rnatilmoqda... (Bu biroz vaqt olishi mumkin)"
-composer install --no-interaction --prefer-dist --optimize-autoloader
+# 3. Barcha eski keshni to'liq yo'q qilish
+echo "🧹 Barcha eski keshlar o'chirilmoqda..."
+rm -f bootstrap/cache/*.php
 
-# 3. Laravel ilova kalitini yaratish
-echo "🔑 Ilova kaliti (APP_KEY) yaratilmoqda..."
-php artisan key:generate
+# 4. BOSQICH 1: Skriptlarsiz Composer install
+echo "📦 1/4: Bog'liqliklar skriptlarsiz o'rnatilmoqda..."
+php composer.phar install --no-scripts --no-interaction --prefer-dist --optimize-autoloader
 
-# 4. Keshni tozalash
-echo "🧹 Eskirgan kesh tozalanmoqda..."
-php artisan config:clear
-php artisan cache:clear
-php artisan route:clear
-php artisan view:clear
+# 5. BOSQICH 2: Konfiguratsiyani keshga yozish
+# Endi .env fayli to'g'ri bo'lgani uchun bu qadam xavfsiz
+echo "⚙️ 2/4: Konfiguratsiya majburan keshga yozilmoqda..."
+php artisan config:cache
 
-echo "------------------------------------------------------------"
-echo "🛠️ Ma'lumotlar bazasi sozlamalari boshlanmoqda..."
+# 6. BOSQICH 3: Composer skriptlarini ishga tushirish
+echo "🚀 3/4: Composer skriptlari endi xavfsiz ishga tushirilmoqda..."
+php composer.phar dump-autoload --optimize
+php artisan package:discover --ansi
 
-# .env fayli mavjudligini tekshirish
-if [ ! -f .env ]; then
-    echo "❌ XATO: .env fayli topilmadi. Skriptni davom ettirib bo'lmaydi."
-    exit 1
-fi
-
-# .env faylidan DB ma'lumotlarini olish
+# 7. BOSQICH 4: Ma'lumotlar bazasini sozlash
+echo "🛠️ 4/4: Ma'lumotlar bazasi sozlanmoqda..."
 DB_DATABASE=$(grep DB_DATABASE .env | cut -d '=' -f2)
 DB_USERNAME=$(grep DB_USERNAME .env | cut -d '=' -f2)
 DB_PASSWORD=$(grep DB_PASSWORD .env | cut -d '=' -f2)
 DB_HOST=$(grep DB_HOST .env | cut -d '=' -f2)
 DB_PORT=$(grep DB_PORT .env | cut -d '=' -f2)
-
-
-# Agar ma'lumotlar to'liq bo'lmasa, xabar berish
-if [ -z "$DB_DATABASE" ] || [ -z "$DB_USERNAME" ]; then
-    echo "❌ XATO: .env faylidagi DB_DATABASE yoki DB_USERNAME bo'sh. Iltimos, to'ldiring."
-    exit 1
-fi
-
-echo "Baza nomi: '$DB_DATABASE'"
-echo "Foydalanuvchi: '$DB_USERNAME'"
-echo "SQL fayl import qilinmoqda: ../brightbr_job.sql"
-
-
-# 5. MySQL'da bazani yaratish va SQL faylini import qilish
-# Parol so'rovi chiqmasligi uchun -p dan keyin bo'sh joy qoldirmaslik muhim
-echo "🏗️ MySQL'da '$DB_DATABASE' bazasi yaratilmoqda va ma'lumotlar import qilinmoqda..."
 mysql -h "$DB_HOST" -P "$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" -e "DROP DATABASE IF EXISTS \`$DB_DATABASE\`; CREATE DATABASE \`$DB_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 mysql -h "$DB_HOST" -P "$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" < ../brightbr_job.sql
-
 echo "✅ Ma'lumotlar bazasi muvaffaqiyatli import qilindi."
+
+# 8. Yakuniy tozalash
+php artisan view:clear
+php artisan route:clear
+
 echo "------------------------------------------------------------"
-echo "✅ SOZLANISH TO'LIQ YAKUNLANDI!"
-echo ""
-echo "DIQQAT: Ishni boshlashdan oldin 'public_html/.env' faylidagi sozlamalar (ayniqsa DB_PASSWORD) to'g'riligiga ishonch hosil qiling."
+echo "✅ MUHITNI SOZLASH TO'LIQ VA MUVAFFAQIYATLI YAKUNLANDI!"
 echo ""
 echo "Dasturni ishga tushirish uchun quyidagi buyruqni kiriting:"
 echo "cd public_html && php artisan serve"
