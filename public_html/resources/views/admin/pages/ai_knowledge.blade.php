@@ -21,7 +21,7 @@
     @if ($errors->any())
         <div class="alert alert-danger alert-dismissible fade show">
             <svg class="ai-icon" style="width: 20px; height: 20px; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <strong>Xatolik!</strong>
+            <strong>Error!</strong>
             <ul>
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -77,7 +77,7 @@
                         </button>
                         <small class="ai-form-text text-center d-block">Generates 10 per category. Press again to continue.</small>
                     </form>
-                    <form method="POST" action="{{ route('ai-knowledge.seed-default') }}" onsubmit="return confirm('Are you sure you want to load default data?')">
+                    <form method="POST" action="{{ route('ai-knowledge.seed-default') }}" onsubmit="return confirm('Are you sure you want to load default data? This may overwrite existing default entries.')">
                         @csrf
                         <button type="submit" class="ai-btn ai-btn-secondary w-100">
                              <svg class="ai-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-1.169 0-2.21-1.03-1.9-2.203l.9-5.522a2 2 0 00-1.9-2.275H5.25a2 2 0 01-2-2V6a2 2 0 012-2h4.5l2.5-4.5a2 2 0 013.5 0l2.5 4.5h4.5a2 2 0 012 2v2.438a2 2 0 01-1.21 1.868l-4.242 2.121z"></path></svg>
@@ -185,7 +185,7 @@
                                         </button>
                                     </form>
                                     @endif
-                                    <form method="POST" action="{{ route('ai-knowledge.delete', $item->id) }}" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this?')">
+                                    <form method="POST" action="{{ route('ai-knowledge.delete', $item->id) }}" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this item?')">
                                         @csrf
                                         <button type="submit" class="btn btn-sm btn-danger" title="Delete">
                                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:16px; height:16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
