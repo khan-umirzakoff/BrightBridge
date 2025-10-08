@@ -522,7 +522,7 @@ class RAGService
                 'jobs' => ['title', 'company', 'location', 'type', 'info'],
                 'news' => ['title', 'desc'],
                 'trainings' => ['title', 'desc'],
-                'newscategory' => ['name', 'description'],
+                // 'newscategory' => ['name', 'description'], // Table doesn't exist, removed
             ];
 
             foreach ($tables as $table => $fields) {
@@ -600,11 +600,6 @@ class RAGService
             case 'trainings':
                 $content = "**{$item->title}**\n";
                 $content .= "- Trening: " . mb_substr(strip_tags($item->desc ?? ''), 0, 2000) . "...";
-                break;
-
-            case 'newscategory':
-                $content = "**{$item->name}**\n";
-                if (!empty($item->description)) $content .= "- Tavsif: {$item->description}";
                 break;
 
             default:
