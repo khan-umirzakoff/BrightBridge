@@ -36,7 +36,7 @@ class AIKnowledgeController extends Controller
         $stats = [
             'ai_knowledge' => [
                 'total' => AiKnowledge::count(),
-                'with_embedding' => AiKnowledge::whereNotNull('embedding')->count(),
+                'with_embedding' => AiKnowledge::whereNotNull('embedding')->where('embedding', '!=', '[]')->where('embedding', '!=', '')->count(),
             ],
             'jobs' => [
                 'total' => \App\Jobs::count(),
@@ -76,9 +76,28 @@ class AIKnowledgeController extends Controller
 
         $data = $request->all();
 
-        AiKnowledge::create($data);
+        $knowledge = AiKnowledge::create($data);
 
-        return redirect()->back()->with('success', 'Ma\'lumot muvaffaqiyatli qo\'shildi va embedding yaratildi');
+        // Generate embedding after creation
+        try {
+            $text = "Kategoriya: {$knowledge->category}. " .
+                    "Kalit: {$knowledge->key}. " .
+                    "Qiymat: {$knowledge->value}. " .
+                    "Izoh: {$knowledge->description}";
+
+            $embedding = $this->aiService->embed($text);
+
+            $knowledge->update(['embedding' => json_encode($embedding)]);
+
+            return redirect()->back()->with('success', 'Ma\'lumot muvaffaqiyatli qo\'shildi va embedding yaratildi');
+
+        } catch (\Exception $e) {
+            Log::error('Embedding generation failed on store', [
+                'knowledge_id' => $knowledge->id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->back()->with('success', 'Ma\'lumot qo\'shildi, lekin embedding yaratishda xatolik yuz berdi: ' . $e->getMessage());
+        }
     }
 
     public function update(Request $request, $id)
@@ -102,7 +121,26 @@ class AIKnowledgeController extends Controller
 
         $knowledge->update($data);
 
-        return redirect()->back()->with('success', 'Ma\'lumot va embedding yangilandi');
+        // Re-generate embedding after update
+        try {
+            $text = "Kategoriya: {$knowledge->category}. " .
+                    "Kalit: {$knowledge->key}. " .
+                    "Qiymat: {$knowledge->value}. " .
+                    "Izoh: {$knowledge->description}";
+
+            $embedding = $this->aiService->embed($text);
+
+            $knowledge->update(['embedding' => json_encode($embedding)]);
+
+            return redirect()->back()->with('success', 'Ma\'lumot va embedding muvaffaqiyatli yangilandi');
+
+        } catch (\Exception $e) {
+            Log::error('Embedding generation failed on update', [
+                'knowledge_id' => $knowledge->id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->back()->with('success', 'Ma\'lumot yangilandi, lekin embedding yaratishda xatolik yuz berdi: ' . $e->getMessage());
+        }
     }
 
     public function destroy($id)
@@ -361,6 +399,30 @@ class AIKnowledgeController extends Controller
             );
         }
 
-        return redirect()->back()->with('success', 'Standart ma\'lumotlar yuklandi');
+        // Now, generate embeddings for the seeded data
+        $seededKeys = array_column($defaultKnowledge, 'key');
+        $seededItems = AiKnowledge::whereIn('key', $seededKeys)->get();
+
+        foreach ($seededItems as $knowledge) {
+            try {
+                $text = "Kategoriya: {$knowledge->category}. " .
+                        "Kalit: {$knowledge->key}. " .
+                        "Qiymat: {$knowledge->value}. " .
+                        "Izoh: {$knowledge->description}";
+
+                $embedding = $this->aiService->embed($text);
+
+                $knowledge->update(['embedding' => json_encode($embedding)]);
+                usleep(300000); // Prevent rate limiting
+            } catch (\Exception $e) {
+                Log::error('Embedding generation failed on seed', [
+                    'knowledge_id' => $knowledge->id,
+                    'error' => $e->getMessage()
+                ]);
+                // Continue to the next item even if one fails
+            }
+        }
+
+        return redirect()->back()->with('success', 'Standart ma\'lumotlar yuklandi va embeddinglar yaratildi');
     }
 }
