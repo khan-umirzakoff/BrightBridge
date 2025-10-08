@@ -3,10 +3,10 @@
 namespace App\Services;
 
 use App\Contracts\AIService;
+use App\Services\RAGService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 
 class GeminiAIService implements AIService
 {
@@ -18,471 +18,218 @@ class GeminiAIService implements AIService
 
     public function __construct()
     {
-        $this->client = new Client([
-            'timeout' => 30,
-            'http_errors' => false,
-        ]);
+        $this->client = new Client(['timeout' => 120]); // Increased timeout for potentially long requests
 
-        // Try to get settings from database, fallback to .env
         try {
             $this->apiKey = \App\AiSetting::get('gemini_api_key') ?: env('GEMINI_API_KEY');
-            $this->model = \App\AiSetting::get('gemini_model') ?: env('GEMINI_MODEL', 'gemini-2.0-flash-exp');
-            $this->embeddingModel = \App\AiSetting::get('gemini_embedding_model') ?: env('GEMINI_EMBEDDING_MODEL', 'gemini-embedding-001');
+            $this->model = \App\AiSetting::get('gemini_model') ?: env('GEMINI_MODEL', 'gemini-1.5-flash');
+            $this->embeddingModel = \App\AiSetting::get('gemini_embedding_model') ?: env('GEMINI_EMBEDDING_MODEL', 'text-embedding-004');
         } catch (\Exception $e) {
-            // Fallback to .env if database not available
             $this->apiKey = env('GEMINI_API_KEY');
-            $this->model = env('GEMINI_MODEL', 'gemini-2.0-flash-exp');
-            $this->embeddingModel = env('GEMINI_EMBEDDING_MODEL', 'gemini-embedding-001');
+            $this->model = env('GEMINI_MODEL', 'gemini-1.5-flash');
+            $this->embeddingModel = env('GEMINI_EMBEDDING_MODEL', 'text-embedding-004');
         }
 
         if (empty($this->apiKey)) {
-            throw new \RuntimeException('Gemini API Key is not configured. Please configure it in Admin > AI Settings.');
+            throw new \RuntimeException('Gemini API Key is not configured.');
         }
     }
 
-    public function chat(string $prompt, array $history = []): string
+    public function streamChat(string $prompt, array $history = [], array $images = []): \Generator
     {
-        $url = "{$this->baseUrl}/models/{$this->model}:generateContent?key={$this->apiKey}";
+        $ragService = app(RAGService::class);
+        $tools = $ragService->getToolDeclarations();
         
+        $contents = $this->buildContents($prompt, $history, $images);
+
+        $payload = [
+            'contents' => $contents,
+            'tools' => $tools,
+            'systemInstruction' => [
+                'parts' => [['text' => $this->getSystemPrompt()]]
+            ],
+            'generationConfig' => [
+                'temperature' => 0.7,
+                'maxOutputTokens' => 4096,
+            ],
+        ];
+
+        yield ['thinking' => true];
+
+        $responseStream = $this->makeStreamingRequest($payload);
+
+        $functionCallParts = [];
+        $sources = [];
+
+        foreach ($responseStream as $event) {
+            if (!empty($event['candidates'][0]['content']['parts'])) {
+                $part = $event['candidates'][0]['content']['parts'][0];
+
+                if (isset($part['functionCall'])) {
+                    // Accumulate function call parts
+                    $functionCallParts[] = $part['functionCall'];
+                } elseif (isset($part['text'])) {
+                    yield ['thinking' => false];
+                    yield ['chunk' => $part['text']];
+                }
+            }
+        }
+
+        if (!empty($functionCallParts)) {
+            yield ['thinking' => false]; // Stop initial thinking
+
+            $fullFunctionCall = $this->assembleFunctionCall($functionCallParts);
+            
+            yield ['tool_start' => ['name' => $fullFunctionCall['name'], 'args' => $fullFunctionCall['args']]];
+
+            $toolResult = $ragService->executeTool($fullFunctionCall['name'], $fullFunctionCall['args']);
+            
+            // Collect sources from the tool result if they exist
+            if (isset($toolResult['sources']) && is_array($toolResult['sources'])) {
+                $sources = array_merge($sources, $toolResult['sources']);
+            }
+
+            $contents[] = [
+                'role' => 'model',
+                'parts' => [['functionCall' => $fullFunctionCall]]
+            ];
+            $contents[] = [
+                'role' => 'tool',
+                'parts' => [['functionResponse' => [
+                    'name' => $fullFunctionCall['name'],
+                    'response' => ['content' => $toolResult['content']]
+                ]]]
+            ];
+
+            $payload['contents'] = $contents;
+
+            $finalResponseStream = $this->makeStreamingRequest($payload);
+
+            foreach ($finalResponseStream as $finalEvent) {
+                 if (!empty($finalEvent['candidates'][0]['content']['parts'][0]['text'])) {
+                    yield ['chunk' => $finalEvent['candidates'][0]['content']['parts'][0]['text']];
+                }
+            }
+        }
+
+        yield ['done' => true, 'sources' => array_values(array_unique($sources, SORT_REGULAR))];
+    }
+
+    private function makeStreamingRequest(array $payload)
+    {
+        $url = "{$this->baseUrl}/models/{$this->model}:streamGenerateContent?key={$this->apiKey}&alt=sse";
+
+        $response = $this->client->post($url, ['json' => $payload, 'stream' => true]);
+        $body = $response->getBody();
+
+        while (!$body->eof()) {
+            $line = $this->readStreamLine($body);
+            if (strpos($line, 'data: ') === 0) {
+                $json = trim(substr($line, 6));
+                yield json_decode($json, true);
+            }
+        }
+    }
+
+    private function readStreamLine($stream) {
+        $buffer = '';
+        while (strpos($buffer, "\n") === false) {
+            if ($stream->eof()) {
+                return $buffer;
+            }
+            $buffer .= $stream->read(1);
+        }
+        return $buffer;
+    }
+
+    private function assembleFunctionCall(array $parts): array
+    {
+        $name = '';
+        $argsJson = '';
+        foreach ($parts as $part) {
+            if (!empty($part['name'])) {
+                $name = $part['name'];
+            }
+            if (!empty($part['args'])) {
+                $argsJson .= json_encode($part['args']);
+            }
+        }
+        // This is a simplified assembly. A more robust solution might need to merge JSON objects.
+        // For now, we assume args come in one complete chunk.
+        $decodedArgs = json_decode(str_replace('}{', ',', $argsJson), true);
+        return ['name' => $name, 'args' => $decodedArgs ?? []];
+    }
+
+    private function buildContents(string $prompt, array $history, array $images): array
+    {
         $contents = [];
-        
         foreach ($history as $message) {
             $contents[] = [
                 'role' => $message['role'] ?? 'user',
                 'parts' => [['text' => $message['text']]]
             ];
         }
-        
-        $contents[] = [
-            'role' => 'user',
-            'parts' => [['text' => $prompt]]
-        ];
 
-        $payload = [
-            'contents' => $contents,
-            'generationConfig' => [
-                'temperature' => 0.7,
-                'topK' => 40,
-                'topP' => 0.95,
-                'maxOutputTokens' => 2048,
-            ],
-            'tools' => [
-                [
-                    'functionDeclarations' => [
-                        [
-                            'name' => 'search_jobs',
-                            'description' => 'Search for job listings when user asks about jobs, vacancies, or work opportunities. Use for filtering by location, type, skills.',
-                            'parameters' => [
-                                'type' => 'object',
-                                'properties' => [
-                                    'query' => [
-                                        'type' => 'string',
-                                        'description' => 'Search query (location, job type, skills)'
-                                    ]
-                                ],
-                                'required' => ['query']
-                            ]
-                        ],
-                        [
-                            'name' => 'list_documents',
-                            'description' => 'List all available documents, books, guides, and knowledge base materials. Use when user asks: "what books/documents do you have?", "list all materials", "show available resources"',
-                            'parameters' => [
-                                'type' => 'object',
-                                'properties' => [
-                                    'category' => [
-                                        'type' => 'string',
-                                        'description' => 'Optional category filter'
-                                    ]
-                                ],
-                                'required' => []
-                            ]
-                        ],
-                        [
-                            'name' => 'get_platform_stats',
-                            'description' => 'Get platform statistics and overview. Use when user asks about numbers, counts, or platform overview.',
-                            'parameters' => [
-                                'type' => 'object',
-                                'properties' => [],
-                                'required' => []
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        ];
-
-        // System instruction
-        $systemPrompt = $this->getSystemPrompt();
-        $payload['systemInstruction'] = [
-            'parts' => [['text' => $systemPrompt]]
-        ];
-
-        try {
-            $response = $this->client->post($url, [
-                'json' => $payload
-            ]);
-
-            $statusCode = $response->getStatusCode();
-            $body = $response->getBody()->getContents();
-            $data = json_decode($body, true);
-
-            if ($statusCode !== 200) {
-                Log::error('Gemini API Error', [
-                    'status' => $statusCode,
-                    'response' => $body
-                ]);
-                throw new \RuntimeException('AI service returned error: ' . ($data['error']['message'] ?? 'Unknown error'));
-            }
-
-            // Thinking detection (real from API)
-            $hasThinking = isset($data['usageMetadata']['thoughtsTokenCount']) 
-                && $data['usageMetadata']['thoughtsTokenCount'] > 0;
-            
-            if ($hasThinking) {
-                Log::info('AI used thinking', [
-                    'thoughtsTokens' => $data['usageMetadata']['thoughtsTokenCount']
-                ]);
-            }
-
-            $candidate = $data['candidates'][0] ?? null;
-            if (!$candidate) {
-                throw new \RuntimeException('No candidate in response');
-            }
-
-            // Function calling check
-            $parts = $candidate['content']['parts'] ?? [];
-            if (!empty($parts) && isset($parts[0]['functionCall'])) {
-                $functionCall = $candidate['content']['parts'][0]['functionCall'];
-                
-                Log::info('Function calling detected', ['function' => $functionCall['name']]);
-                
-                // Execute function va qayta so'rov
-                $functionResult = $this->executeFunction($functionCall);
-                
-                // Function result bilan qayta chaqirish
-                $contents[] = $candidate['content'];
-                $contents[] = [
-                    'role' => 'function',
-                    'parts' => [
-                        [
-                            'functionResponse' => [
-                                'name' => $functionCall['name'],
-                                'response' => [
-                                    'result' => $functionResult
-                                ]
-                            ]
-                        ]
-                    ]
-                ];
-                
-                $secondPayload = [
-                    'contents' => $contents,
-                    'generationConfig' => $payload['generationConfig']
-                ];
-                
-                Log::info('Sending function response back to AI');
-                
-                $response2 = $this->client->post($url, ['json' => $secondPayload]);
-                $statusCode2 = $response2->getStatusCode();
-                $body2 = $response2->getBody()->getContents();
-                $data2 = json_decode($body2, true);
-                
-                if ($statusCode2 !== 200) {
-                    Log::error('Function response API error', ['response' => $body2]);
-                    return 'Function executed but response error';
-                }
-                
-                Log::info('Function response received', ['data' => $data2]);
-                
-                // Ikkinchi javobdan text olish
-                if (isset($data2['candidates'][0]['content']['parts'])) {
-                    foreach ($data2['candidates'][0]['content']['parts'] as $part) {
-                        if (isset($part['text']) && !empty($part['text'])) {
-                            return $part['text'];
-                        }
-                    }
-                }
-                
-                Log::warning('Function response empty', ['data' => $data2]);
-                return 'Ma\'lumot topildi, lekin javob yaratishda xatolik.';
-            }
-
-            // Oddiy javob
-            $parts = $candidate['content']['parts'] ?? [];
-            
-            // Text qidirish (parts array ichida)
-            foreach ($parts as $part) {
-                if (isset($part['text']) && !empty($part['text'])) {
-                    return $part['text'];
-                }
-            }
-            
-            // Agar text topilmasa
-            Log::error('Gemini Response Missing Text', [
-                'response' => $data,
-                'finishReason' => $candidate['finishReason'] ?? 'unknown'
-            ]);
-            
-            // Thinking model bo'lsa, placeholder javob
-            if (isset($data['usageMetadata']['thoughtsTokenCount'])) {
-                return 'Kechirasiz, javob yaratishda xatolik yuz berdi. Iltimos, qayta urinib ko\'ring.';
-            }
-            
-            throw new \RuntimeException('AI service returned invalid response');
-
-        } catch (RequestException $e) {
-            Log::error('Gemini Chat Request Failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            throw new \RuntimeException('AI service is currently unavailable. Please try again later.');
-        } catch (\Exception $e) {
-            Log::error('Gemini Chat Unexpected Error', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            throw $e;
+        $userParts = [];
+        if (!empty($prompt)) {
+            $userParts[] = ['text' => $prompt];
         }
+        foreach ($images as $imageBase64) {
+            $userParts[] = ['inlineData' => ['mimeType' => 'image/jpeg', 'data' => $imageBase64]];
+        }
+        
+        if (!empty($userParts)) {
+            $contents[] = ['role' => 'user', 'parts' => $userParts];
+        }
+        
+        return $contents;
     }
 
     public function embed(string $text): array
     {
         $url = "{$this->baseUrl}/models/{$this->embeddingModel}:embedContent?key={$this->apiKey}";
-        
+
         try {
             $response = $this->client->post($url, [
-                'json' => [
-                    'model' => "models/{$this->embeddingModel}",
-                    'content' => [
-                        'parts' => [['text' => $text]]
-                    ]
-                ]
+                'json' => ['model' => "models/{$this->embeddingModel}", 'content' => ['parts' => [['text' => $text]]]]
             ]);
-
-            $statusCode = $response->getStatusCode();
-            $body = $response->getBody()->getContents();
-            $data = json_decode($body, true);
-
-            if ($statusCode !== 200) {
-                Log::error('Gemini Embedding Error', [
-                    'status' => $statusCode,
-                    'response' => $body
-                ]);
-                throw new \RuntimeException('Embedding service returned error');
-            }
-
+            $data = json_decode($response->getBody()->getContents(), true);
             return $data['embedding']['values'] ?? [];
-
         } catch (RequestException $e) {
-            Log::error('Gemini Embed Request Failed', [
-                'error' => $e->getMessage()
-            ]);
+            Log::error('Gemini Embed Request Failed', ['error' => $e->getMessage()]);
             throw new \RuntimeException('Embedding service is currently unavailable');
         }
-    }
-
-    protected function executeFunction($functionCall): string
-    {
-        $functionName = $functionCall['name'];
-        $args = $functionCall['args'] ?? [];
-
-        Log::info('Executing function', ['function' => $functionName, 'args' => $args]);
-
-        switch ($functionName) {
-            case 'search_jobs':
-                $ragService = app(\App\Services\RAGService::class);
-                $query = $args['query'] ?? '';
-                return $ragService->buildContext($query);
-
-            case 'list_documents':
-                return $this->listDocuments($args['category'] ?? null);
-
-            case 'get_platform_stats':
-                return $this->getPlatformStats();
-
-            default:
-                Log::warning('Unknown function called', ['function' => $functionName]);
-                return 'Function not found';
-        }
-    }
-
-    protected function listDocuments(?string $category = null): string
-    {
-        try {
-            $query = DB::table('ai_documents')
-                ->select(['id', 'title', 'category', 'description', 'file_size', 'created_at'])
-                ->orderBy('created_at', 'desc');
-
-            if ($category) {
-                $query->where('category', 'LIKE', "%{$category}%");
-            }
-
-            $documents = $query->limit(50)->get();
-
-            if ($documents->isEmpty()) {
-                return "Hozircha hech qanday hujjat yoki kitob yuklanmagan.";
-            }
-
-            $result = "## Mavjud Hujjatlar va Kitoblar:\n\n";
-            $grouped = $documents->groupBy('category');
-
-            foreach ($grouped as $cat => $docs) {
-                $result .= "### {$cat}\n\n";
-                foreach ($docs as $doc) {
-                    $size = round($doc->file_size / 1024, 2);
-                    $result .= "**{$doc->title}**\n";
-                    if ($doc->description) {
-                        $result .= "- Tavsif: {$doc->description}\n";
-                    }
-                    $result .= "- Hajm: {$size} KB\n";
-                    $result .= "- Yuklangan: " . date('d.m.Y', strtotime($doc->created_at)) . "\n\n";
-                }
-            }
-
-            $result .= "\nJami: " . $documents->count() . " ta hujjat mavjud.";
-
-            return $result;
-
-        } catch (\Exception $e) {
-            Log::error('list_documents error', ['error' => $e->getMessage()]);
-            return "Hujjatlar ro'yxatini olishda xatolik yuz berdi.";
-        }
-    }
-
-    protected function getPlatformStats(): string
-    {
-        try {
-            $totalJobs = DB::table('jobs')->where('status', 1)->count();
-            $totalNews = DB::table('news')->count();
-            $totalTrainings = DB::table('trainings')->count();
-            $totalDocuments = DB::table('ai_documents')->count();
-            $totalKnowledge = DB::table('ai_knowledge')->where('is_active', true)->count();
-
-            $result = "## JobCare Platforma Statistikasi:\n\n";
-            $result .= "- **Aktiv vakansiyalar:** {$totalJobs} ta\n";
-            $result .= "- **Yangiliklar:** {$totalNews} ta\n";
-            $result .= "- **Treninglar:** {$totalTrainings} ta\n";
-            $result .= "- **Hujjatlar/Kitoblar:** {$totalDocuments} ta\n";
-            $result .= "- **Bilimlar bazasi:** {$totalKnowledge} ta ma'lumot\n";
-
-            return $result;
-
-        } catch (\Exception $e) {
-            Log::error('get_platform_stats error', ['error' => $e->getMessage()]);
-            return "Statistikani olishda xatolik yuz berdi.";
-        }
-    }
-
-    public function chatWithImage(string $prompt, string $imageBase64, array $history = []): string
-    {
-        return $this->chatWithImages($prompt, [$imageBase64], $history);
-    }
-
-    public function chatWithImages(string $prompt, array $images, array $history = []): string
-    {
-        $url = "{$this->baseUrl}/models/{$this->model}:generateContent?key={$this->apiKey}";
-
-        $contents = [];
-
-        foreach ($history as $message) {
-            $contents[] = [
-                'role' => $message['role'] ?? 'user',
-                'parts' => [['text' => $message['text']]]
-            ];
-        }
-
-        // Rasm va text (text ixtiyoriy)
-        $parts = [];
-
-        if (!empty($prompt)) {
-            $parts[] = ['text' => $prompt];
-        }
-
-        foreach ($images as $imageBase64) {
-            $parts[] = [
-                'inlineData' => [
-                    'mimeType' => 'image/jpeg',
-                    'data' => $imageBase64
-                ]
-            ];
-        }
-
-        $contents[] = [
-            'role' => 'user',
-            'parts' => $parts
-        ];
-
-        $payload = [
-            'contents' => $contents,
-            'generationConfig' => [
-                'temperature' => 0.7,
-                'maxOutputTokens' => 2048,
-            ]
-        ];
-
-        try {
-            $response = $this->client->post($url, ['json' => $payload]);
-            $statusCode = $response->getStatusCode();
-            $body = $response->getBody()->getContents();
-            $data = json_decode($body, true);
-
-            if ($statusCode !== 200) {
-                Log::error('Gemini Vision API Error', ['status' => $statusCode, 'response' => $body]);
-                throw new \RuntimeException('Rasm tahlil xato');
-            }
-
-            $candidate = $data['candidates'][0] ?? null;
-            if (!$candidate) {
-                throw new \RuntimeException('No candidate');
-            }
-
-            $parts = $candidate['content']['parts'] ?? [];
-            foreach ($parts as $part) {
-                if (isset($part['text']) && !empty($part['text'])) {
-                    return $part['text'];
-                }
-            }
-
-            throw new \RuntimeException('Vision response empty');
-
-        } catch (\Exception $e) {
-            Log::error('Vision API Error', ['error' => $e->getMessage()]);
-            throw new \RuntimeException('Rasmni tahlil qilishda xatolik');
-        }
-    }
-
-    public function chatWithThinking(string $prompt, array $history = []): array
-    {
-        $response = $this->chat($prompt, $history);
-        
-        // Since chat() method doesn't return thinking info, 
-        // we'll simulate it by checking if the response suggests thinking
-        $hasThinking = strlen($response) > 100 || 
-                      str_contains(strtolower($response), 'analizlash') ||
-                      str_contains(strtolower($response), 'o\'ylab') ||
-                      str_contains(strtolower($response), 'hisoblab');
-        
-        return [
-            'response' => $response,
-            'thinking' => $hasThinking
-        ];
-    }
-
-    public function chatWithImagesAndThinking(string $prompt, array $base64Images, array $history = []): array
-    {
-        $response = $this->chatWithImages($prompt, $base64Images, $history);
-
-        // Image analysis usually involves thinking
-        $hasThinking = true;
-
-        return [
-            'response' => $response,
-            'thinking' => $hasThinking
-        ];
     }
 
     public function getSystemPrompt(): string
     {
         return \App\AiSetting::getSystemPrompt();
+    }
+
+    // The following methods are now deprecated in favor of streamChat and will be removed.
+    public function chat(string $prompt, array $history = []): string {
+        // This method should ideally not be called directly anymore.
+        // For compatibility, we can simulate a non-streaming call.
+        $generator = $this->streamChat($prompt, $history);
+        $fullResponse = '';
+        foreach($generator as $event) {
+            if(isset($event['chunk'])) {
+                $fullResponse .= $event['chunk'];
+            }
+        }
+        return $fullResponse;
+    }
+    public function chatWithImage(string $prompt, string $imageBase64, array $history = []): string {
+        return $this->chatWithImages($prompt, [$imageBase64], $history);
+    }
+    public function chatWithImages(string $prompt, array $images, array $history = []): string {
+        $generator = $this->streamChat($prompt, $history, $images);
+        $fullResponse = '';
+        foreach($generator as $event) {
+            if(isset($event['chunk'])) {
+                $fullResponse .= $event['chunk'];
+            }
+        }
+        return $fullResponse;
     }
 }

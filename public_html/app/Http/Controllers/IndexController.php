@@ -148,6 +148,17 @@ public function candidatedetail($id)
     return view("pages.trainings", compact('trainings', 'testimonials', 'category'));
 }
 
+public function training_details($id)
+{
+    $training = Trainings::find($id);
+
+    if (!$training) {
+        abort(404);
+    }
+
+    return view("pages.training_details", compact('training'));
+}
+
 public function job_details($id)
 {
 

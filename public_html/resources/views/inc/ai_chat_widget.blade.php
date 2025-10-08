@@ -1,4 +1,43 @@
 <link rel="stylesheet" href="{{ asset('css/ai_chat_widget.css') }}">
+<style>
+    .sources-container {
+        margin-top: 12px;
+        border-top: 1px solid #e5e5ea;
+        padding-top: 8px;
+    }
+    .sources-button {
+        background: #f0f0f0;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 12px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #555;
+    }
+    .sources-button:hover {
+        background: #e0e0e0;
+    }
+    .sources-list {
+        margin-top: 8px;
+        padding-left: 15px;
+    }
+    .sources-list a {
+        display: block;
+        font-size: 13px;
+        color: #0d2d62;
+        text-decoration: none;
+        margin-bottom: 5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .sources-list a:hover {
+        text-decoration: underline;
+    }
+</style>
 
 <div id="ai-chat-widget">
     <button id="chat-icon" aria-label="Chatni ochish">
@@ -304,61 +343,48 @@ document.addEventListener('DOMContentLoaded', function() {
     function formatMarkdown(text) {
         if (!text) return '';
         
-        // Code blocks ```code``` -> <pre>code</pre>
         text = text.replace(/```([\s\S]+?)```/g, '<pre style="background:#2d2d2d;color:#f8f8f2;padding:12px;border-radius:6px;overflow-x:auto;margin:8px 0;"><code>$1</code></pre>');
-        
-        // Inline code `code` -> <code>code</code>
         text = text.replace(/`(.+?)`/g, '<code style="background:#f4f4f4;padding:2px 6px;border-radius:3px;font-family:monospace;color:#e83e8c;">$1</code>');
-        
-        // **bold** -> <strong>bold</strong>
         text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-        
-        // *italic* -> <em>italic</em>
         text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
-        
-        // Headers ### -> <h3>
         text = text.replace(/^### (.+)$/gm, '<h3 style="font-size:1.1rem;font-weight:600;margin:12px 0 8px 0;">$1</h3>');
         text = text.replace(/^## (.+)$/gm, '<h2 style="font-size:1.2rem;font-weight:600;margin:14px 0 10px 0;">$1</h2>');
         text = text.replace(/^# (.+)$/gm, '<h1 style="font-size:1.3rem;font-weight:600;margin:16px 0 12px 0;">$1</h1>');
-        
-        // Lists - (.+) -> <li>item</li>
         text = text.replace(/^- (.+)$/gm, '<li style="margin-left:20px;">$1</li>');
         text = text.replace(/^(\d+)\. (.+)$/gm, '<li style="margin-left:20px;list-style-type:decimal;">$2</li>');
-        
-        // Blockquote > text -> <blockquote>
         text = text.replace(/^> (.+)$/gm, '<blockquote style="border-left:3px solid #667eea;padding-left:12px;margin:8px 0;color:#666;">$1</blockquote>');
-        
-        // Horizontal rule --- -> <hr>
         text = text.replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #e0e0e0;margin:12px 0;">');
-        
-        // Links [text](url) -> <a>text</a>
         text = text.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" style="color:#667eea;text-decoration:underline;">$1</a>');
-        
-        // Line breaks
         text = text.replace(/\n/g, '<br>');
         
         return text;
     }
 
-    // Xabar yuborish funksiyasi
+    function showUserMessageError(userMessageDiv, text) {
+        let errorDiv = userMessageDiv.querySelector('.message-error-text');
+        if (!errorDiv) {
+            errorDiv = document.createElement('div');
+            errorDiv.className = 'message-error-text';
+            errorDiv.style.color = '#ff4757';
+            errorDiv.style.fontSize = '12px';
+            errorDiv.style.marginTop = '4px';
+            errorDiv.style.textAlign = 'right';
+            userMessageDiv.appendChild(errorDiv);
+        }
+        errorDiv.textContent = text;
+    }
+
     async function sendMessage() {
         const message = chatInputField.value.trim();
         const imagePreviews = document.querySelectorAll('.image-preview-wrapper');
 
-        if (message === '' && imagePreviews.length === 0) {
-            console.log('Empty message and no images');
-            return;
-        }
+        if (message === '' && imagePreviews.length === 0) return;
 
-        // Rasm yuborish uchun matn majburiy
         if (imagePreviews.length > 0 && message === '') {
             showToast('Rasm yuborish uchun matn ham kiritish kerak.');
             return;
         }
 
-        console.log('sendMessage called', { message, imageCount: imagePreviews.length });
-
-        // Rasm base64 larni olish
         const images = [];
         for (let preview of imagePreviews) {
             const img = preview.querySelector('img');
@@ -368,10 +394,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Preview larni o'chirish
-        imagePreviews.forEach(preview => preview.remove());
+        document.getElementById('image-previews').innerHTML = '';
+        updateSendButton();
 
-        // User message qo'shish
         const userMessageDiv = document.createElement('div');
         userMessageDiv.className = 'user-message message';
         let content = '';
@@ -385,35 +410,30 @@ document.addEventListener('DOMContentLoaded', function() {
         content += message;
         userMessageDiv.innerHTML = content;
         chatMessages.appendChild(userMessageDiv);
+        forceScroll();
 
-        // Input maydonini tozalash va disable qilish
         chatInputField.value = '';
+        updateSendButton();
+
+        if (!navigator.onLine) {
+            showUserMessageError(userMessageDiv, 'Internetingizni tekshiring');
+            return;
+        }
+
         chatInputField.disabled = true;
         chatSendButton.disabled = true;
         chatImageButton.disabled = true;
 
-        // Xabarlar oynasini pastga surish
-        smartScroll();
-
-        // Loading indicator qo'shish
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'bot-message message loading';
         loadingDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
         chatMessages.appendChild(loadingDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        forceScroll();
 
-        // History ga user xabarini qo'shish
-        chatHistory.push({
-            role: 'user',
-            text: message,
-            images: images
-        });
+        chatHistory.push({ role: 'user', text: message, images: images });
         saveChatHistory();
 
         try {
-            // Backend API ga so'rov yuborish (streaming)
-            console.log('Sending request to API...', { message, imageCount: images.length });
-            
             const response = await fetch('/api/ai/chat', {
                 method: 'POST',
                 headers: {
@@ -429,20 +449,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     images: images
                 })
             });
-            
-            console.log('Response status:', response.status);
 
-            // Loading indicator ni o'chirish
-            loadingDiv.remove();
+            if (loadingDiv.parentElement) loadingDiv.remove();
 
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                const errorData = await response.json().catch(() => ({ error: 'Server bilan bog\'lanishda xatolik.' }));
+                throw new Error(errorData.error || 'Network response was not ok');
             }
 
-            // Bot javob div
             const botMessageDiv = document.createElement('div');
             botMessageDiv.className = 'bot-message message';
-            botMessageDiv.textContent = '';
             chatMessages.appendChild(botMessageDiv);
 
             let fullText = '';
@@ -453,52 +469,84 @@ document.addEventListener('DOMContentLoaded', function() {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                const chunk = decoder.decode(value);
+                const chunk = decoder.decode(value, { stream: true });
                 const lines = chunk.split('\n');
 
                 for (const line of lines) {
                     if (line.startsWith('data: ')) {
                         try {
-                            const data = JSON.parse(line.slice(6));
-                            
-                            // Thinking indicator
+                            const dataStr = line.slice(6);
+                            if (!dataStr) continue;
+                            const data = JSON.parse(dataStr);
+
                             if (data.thinking === true) {
-                                const thinkDiv = document.createElement('div');
-                                thinkDiv.className = 'thinking-indicator';
-                                thinkDiv.id = 'think-indicator';
-                                thinkDiv.innerHTML = `
-                                    <span class="thinking-text">thinking</span><span class="dots"><span>.</span><span>.</span><span>.</span></span>
-                                `;
-                                botMessageDiv.before(thinkDiv);
-                                forceScroll();
+                                let thinkDiv = document.getElementById('think-indicator');
+                                if (!thinkDiv) {
+                                    thinkDiv = document.createElement('div');
+                                    thinkDiv.className = 'thinking-indicator';
+                                    thinkDiv.id = 'think-indicator';
+                                    thinkDiv.innerHTML = `<span class="thinking-text">thinking</span><span class="dots"><span>.</span><span>.</span><span>.</span></span>`;
+                                    botMessageDiv.before(thinkDiv);
+                                    forceScroll();
+                                }
                             }
                             
                             if (data.thinking === false) {
                                 const thinkDiv = document.getElementById('think-indicator');
                                 if (thinkDiv) thinkDiv.remove();
                             }
-                            
+
                             if (data.chunk) {
                                 fullText += data.chunk;
                                 botMessageDiv.innerHTML = formatMarkdown(fullText);
                                 smartScroll();
                             }
-                            
+
                             if (data.done) {
-                                chatHistory.push({
-                                    role: 'model',
-                                    text: fullText
-                                });
+                                // Add sources if available
+                                if (data.sources && data.sources.length > 0) {
+                                    const sourcesContainer = document.createElement('div');
+                                    sourcesContainer.className = 'sources-container';
+
+                                    const sourcesButton = document.createElement('button');
+                                    sourcesButton.className = 'sources-button';
+                                    sourcesButton.innerHTML = `
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                        Manbalar
+                                    `;
+
+                                    const sourcesList = document.createElement('div');
+                                    sourcesList.className = 'sources-list';
+                                    sourcesList.style.display = 'none';
+
+                                    data.sources.forEach(source => {
+                                        const link = document.createElement('a');
+                                        link.href = source.url;
+                                        link.textContent = source.title || 'Batafsil';
+                                        link.target = '_blank';
+                                        sourcesList.appendChild(link);
+                                    });
+
+                                    sourcesButton.addEventListener('click', () => {
+                                        sourcesList.style.display = sourcesList.style.display === 'none' ? 'block' : 'none';
+                                        forceScroll();
+                                    });
+
+                                    sourcesContainer.appendChild(sourcesButton);
+                                    sourcesContainer.appendChild(sourcesList);
+                                    botMessageDiv.appendChild(sourcesContainer);
+                                }
+
+                                chatHistory.push({ role: 'model', text: fullText, sources: data.sources || [] });
                                 saveChatHistory();
                                 forceScroll();
                                 scrollCounter = 0;
                             }
-                            
-                            if (data.error) {
-                                throw new Error(data.error);
-                            }
+
+                            if (data.error) throw new Error(data.error);
+
                         } catch (e) {
-                            console.error('Parse error:', e);
+                            console.error('JSON parse error:', e, 'line:', line);
                         }
                     }
                 }
@@ -506,24 +554,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (error) {
             console.error('AI Chat Error:', error);
-            
-            // Loading indicator ni o'chirish
-            loadingDiv.remove();
 
-            // Xato xabarini ko'rsatish
+            if (loadingDiv.parentElement) loadingDiv.remove();
+            const thinkDiv = document.getElementById('think-indicator');
+            if (thinkDiv) thinkDiv.remove();
+
             const errorDiv = document.createElement('div');
             errorDiv.className = 'bot-message message error-message';
-            errorDiv.textContent = 'Kechirasiz, xatolik yuz berdi. Iltimos, qayta urinib ko\'ring.';
+            if (!navigator.onLine) {
+                errorDiv.textContent = 'Internet aloqasi uzildi. Iltimos, qayta ulanib, urinib ko\'ring.';
+            } else {
+                errorDiv.textContent = 'Kechirasiz, xatolik yuz berdi. Iltimos, qayta urinib ko\'ring.';
+            }
             chatMessages.appendChild(errorDiv);
         } finally {
-            // Input maydonini qayta yoqish
             chatInputField.disabled = false;
             chatSendButton.disabled = false;
             chatImageButton.disabled = false;
             chatInputField.focus();
-
-            // Xabarlar oynasini pastga surish
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            forceScroll();
         }
     }
 
