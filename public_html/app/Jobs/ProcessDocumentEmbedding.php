@@ -41,17 +41,47 @@ class ProcessDocumentEmbedding implements ShouldQueue
         }
 
         $content = $document->content;
+        $contentLength = mb_strlen($content);
 
-        // Split content into chunks for embedding
-        // Increased from 2000 to 5000 for better context coverage
-        $chunkSize = 5000;
+        // PROFESSIONAL DYNAMIC CHUNKING STRATEGY
+        // Automatically adjusts based on document size
+
+        if ($contentLength < 10000) {
+            // Small documents (< 10KB): 1 chunk, full content
+            $chunkSize = $contentLength;
+            $maxChunks = 1;
+        } elseif ($contentLength < 50000) {
+            // Medium documents (10-50KB): ~10 chunks of 5KB
+            $chunkSize = 5000;
+            $maxChunks = 10;
+        } elseif ($contentLength < 200000) {
+            // Large documents (50-200KB): ~40 chunks of 5KB
+            $chunkSize = 5000;
+            $maxChunks = 40;
+        } elseif ($contentLength < 500000) {
+            // Very large documents (200-500KB): ~50 chunks of 10KB
+            $chunkSize = 10000;
+            $maxChunks = 50;
+        } else {
+            // Huge books (>500KB): ~100 chunks of 10KB (1MB max)
+            $chunkSize = 10000;
+            $maxChunks = 100;
+        }
+
         $chunks = str_split($content, $chunkSize);
         $embeddings = [];
 
-        // Increased from 20 to 100 chunks for books (500KB total coverage)
-        // This allows large documents/books to be fully searchable
-        $chunks = array_slice($chunks, 0, 100);
+        // Limit chunks based on document size
+        $chunks = array_slice($chunks, 0, $maxChunks);
         $totalChunks = count($chunks);
+
+        Log::info('Document chunking strategy', [
+            'document_id' => $this->documentId,
+            'content_length' => $contentLength,
+            'chunk_size' => $chunkSize,
+            'total_chunks' => $totalChunks,
+            'coverage' => min(100, round(($totalChunks * $chunkSize / $contentLength) * 100, 2)) . '%'
+        ]);
 
         foreach ($chunks as $index => $chunk) {
             if (trim($chunk)) {
