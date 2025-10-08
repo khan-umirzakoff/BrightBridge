@@ -150,7 +150,7 @@
 </div>
 
 {{-- Loading Modal --}}
-<div id="loading-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+<div id="loading-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center;">
     <div class="text-center text-white">
         <div class="spinner-border text-primary" style="width: 4rem; height: 4rem;" role="status"></div>
         <h4 class="mt-4">Processing File...</h4>
