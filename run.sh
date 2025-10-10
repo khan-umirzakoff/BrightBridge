@@ -2,7 +2,7 @@
 # Agar biror buyruq xato bilan yakunlansa, skriptni darhol to'xtatish
 set -e
 
-echo "🚀 To'liq muhitni sozlash skripti ishga tushirildi (Yakuniy, ishonchli versiya)..."
+echo "🚀 To'liq muhitni sozlash skripti ishga tushirildi (Fayl huquqlari tuzatilgan versiya)..."
 echo "------------------------------------------------------------"
 
 # 1. Tizim va PHP sozlamalari
@@ -27,26 +27,38 @@ else
     echo "👍 Composer allaqachon mavjud."
 fi
 
-# 3. Barcha eski keshni to'liq yo'q qilish
+# 3. .env fayli mavjudligini tekshirish
+if [ ! -f ".env" ]; then
+  echo "❌ XATO: .env fayli mavjud emas. Iltimos, uni yarating."
+  exit 1
+fi
+
+# 4. Barcha eski keshni to'liq yo'q qilish
 echo "🧹 Barcha eski keshlar o'chirilmoqda..."
 rm -f bootstrap/cache/*.php
 
-# 4. BOSQICH 1: Skriptlarsiz Composer install
-echo "📦 1/4: Bog'liqliklar skriptlarsiz o'rnatilmoqda..."
+# 5. BOSQICH 1: Skriptlarsiz Composer install
+echo "📦 1/5: Bog'liqliklar skriptlarsiz o'rnatilmoqda..."
 php composer.phar install --no-scripts --no-interaction --prefer-dist --optimize-autoloader
 
-# 5. BOSQICH 2: Konfiguratsiyani keshga yozish
-# Endi .env fayli to'g'ri bo'lgani uchun bu qadam xavfsiz
-echo "⚙️ 2/4: Konfiguratsiya majburan keshga yozilmoqda..."
+# 6. BOSQICH 2: Konfiguratsiyani keshga yozish
+echo "⚙️ 2/5: Konfiguratsiya majburan keshga yozilmoqda..."
+php artisan key:generate --ansi
 php artisan config:cache
 
-# 6. BOSQICH 3: Composer skriptlarini ishga tushirish
-echo "🚀 3/4: Composer skriptlari endi xavfsiz ishga tushirilmoqda..."
+# 7. BOSQICH 3: Composer skriptlarini ishga tushirish
+echo "🚀 3/5: Composer skriptlari endi xavfsiz ishga tushirilmoqda..."
 php composer.phar dump-autoload --optimize
 php artisan package:discover --ansi
 
-# 7. BOSQICH 4: Ma'lumotlar bazasini sozlash
-echo "🛠️ 4/4: Ma'lumotlar bazasi sozlanmoqda..."
+# 8. BOSQICH 4: Fayl huquqlarini to'g'rilash (YANGI QADAM)
+echo "🔒 4/5: Kerakli papkalarga yozish huquqlari berilmoqda..."
+chmod -R 777 storage
+chmod -R 777 bootstrap/cache
+echo "✅ Fayl huquqlari sozlandi."
+
+# 9. BOSQICH 5: Ma'lumotlar bazasini sozlash
+echo "🛠️ 5/5: Ma'lumotlar bazasi sozlanmoqda..."
 DB_DATABASE=$(grep DB_DATABASE .env | cut -d '=' -f2)
 DB_USERNAME=$(grep DB_USERNAME .env | cut -d '=' -f2)
 DB_PASSWORD=$(grep DB_PASSWORD .env | cut -d '=' -f2)
@@ -56,7 +68,7 @@ mysql -h "$DB_HOST" -P "$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" -e "DROP DAT
 mysql -h "$DB_HOST" -P "$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" < ../brightbr_job.sql
 echo "✅ Ma'lumotlar bazasi muvaffaqiyatli import qilindi."
 
-# 8. Yakuniy tozalash
+# 10. Yakuniy tozalash
 php artisan view:clear
 php artisan route:clear
 
