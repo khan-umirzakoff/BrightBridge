@@ -54,9 +54,24 @@ DB_DATABASE=$(grep DB_DATABASE .env | cut -d '=' -f2)
 DB_USERNAME=$(grep DB_USERNAME .env | cut -d '=' -f2)
 DB_HOST=$(grep DB_HOST .env | cut -d '=' -f2)
 DB_PORT=$(grep DB_PORT .env | cut -d '=' -f2)
-mysql -h "$DB_HOST" -P "$DB_PORT" -u"$DB_USERNAME" -e "CREATE DATABASE IF NOT EXISTS \`$DB_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# Ma'lumotlar bazasi papkasini majburan o'chirish
+echo "🔥 Ma'lumotlar bazasi papkasini majburan o'chirish..."
+rm -rf "$DB_DATABASE"
+echo "✅ Papka o'chirildi."
+
+# Ma'lumotlar bazasini o'chirish va qayta yaratish
+mysql -h "$DB_HOST" -P "$DB_PORT" -u"$DB_USERNAME" -e "DROP DATABASE IF EXISTS \`$DB_DATABASE\`;"
+mysql -h "$DB_HOST" -P "$DB_PORT" -u"$DB_USERNAME" -e "CREATE DATABASE \`$DB_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# SQL faylini import qilish
 mysql -h "$DB_HOST" -P "$DB_PORT" -u"$DB_USERNAME" "$DB_DATABASE" < ../brightbr_job.sql
 echo "✅ Ma'lumotlar bazasi muvaffaqiyatli import qilindi."
+
+# Migratsiyalarni ishga tushirish
+php artisan migrate
+echo "✅ Migratsiyalar muvaffaqiyatli yakunlandi."
+
 
 # 10. Yakuniy tozalash
 php artisan view:clear
