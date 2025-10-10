@@ -2,7 +2,7 @@
 # Agar biror buyruq xato bilan yakunlansa, skriptni darhol to'xtatish
 set -e
 
-echo "🚀 To'liq muhitni sozlash skripti ishga tushirildi (Fayl huquqlari tuzatilgan versiya)..."
+echo "🚀 To'liq muhitni sozlash skripti ishga tushirildi (Tuzatilgan kod bilan standart versiya)..."
 echo "------------------------------------------------------------"
 
 # 1. Tizim va PHP sozlamalari
@@ -33,32 +33,26 @@ if [ ! -f ".env" ]; then
   exit 1
 fi
 
-# 4. Barcha eski keshni to'liq yo'q qilish
+# 4. Keshni tozalash (har ehtimolga qarshi)
 echo "🧹 Barcha eski keshlar o'chirilmoqda..."
 rm -f bootstrap/cache/*.php
 
-# 5. BOSQICH 1: Skriptlarsiz Composer install
-echo "📦 1/5: Bog'liqliklar skriptlarsiz o'rnatilmoqda..."
-php composer.phar install --no-scripts --no-interaction --prefer-dist --optimize-autoloader
+# 5. Composer bog'liqliklarini o'rnatish
+echo "📦 Bog'liqliklar o'rnatilmoqda..."
+php composer.phar install --no-interaction --prefer-dist --optimize-autoloader
 
-# 6. BOSQICH 2: Konfiguratsiyani keshga yozish
-echo "⚙️ 2/5: Konfiguratsiya majburan keshga yozilmoqda..."
+# 6. Laravel ilova kalitini yaratish (agar kerak bo'lsa)
+# .env faylida allaqachon mavjud, lekin bu buyruq zarar qilmaydi
 php artisan key:generate --ansi
-php artisan config:cache
 
-# 7. BOSQICH 3: Composer skriptlarini ishga tushirish
-echo "🚀 3/5: Composer skriptlari endi xavfsiz ishga tushirilmoqda..."
-php composer.phar dump-autoload --optimize
-php artisan package:discover --ansi
-
-# 8. BOSQICH 4: Fayl huquqlarini to'g'rilash (YANGI QADAM)
-echo "🔒 4/5: Kerakli papkalarga yozish huquqlari berilmoqda..."
+# 7. Fayl huquqlarini to'g'rilash
+echo "🔒 Kerakli papkalarga yozish huquqlari berilmoqda..."
 chmod -R 777 storage
 chmod -R 777 bootstrap/cache
 echo "✅ Fayl huquqlari sozlandi."
 
-# 9. BOSQICH 5: Ma'lumotlar bazasini sozlash
-echo "🛠️ 5/5: Ma'lumotlar bazasi sozlanmoqda..."
+# 8. Ma'lumotlar bazasini sozlash
+echo "🛠️ Ma'lumotlar bazasi sozlanmoqda..."
 DB_DATABASE=$(grep DB_DATABASE .env | cut -d '=' -f2)
 DB_USERNAME=$(grep DB_USERNAME .env | cut -d '=' -f2)
 DB_PASSWORD=$(grep DB_PASSWORD .env | cut -d '=' -f2)
@@ -68,9 +62,10 @@ mysql -h "$DB_HOST" -P "$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" -e "DROP DAT
 mysql -h "$DB_HOST" -P "$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" < ../brightbr_job.sql
 echo "✅ Ma'lumotlar bazasi muvaffaqiyatli import qilindi."
 
-# 10. Yakuniy tozalash
-php artisan view:clear
+# 9. Yakuniy tozalash
+php artisan config:clear
 php artisan route:clear
+php artisan view:clear
 
 echo "------------------------------------------------------------"
 echo "✅ MUHITNI SOZLASH TO'LIQ VA MUVAFFAQIYATLI YAKUNLANDI!"
