@@ -52,11 +52,10 @@ echo "✅ Fayl huquqlari sozlandi."
 echo "🛠️ 5/5: Ma'lumotlar bazasi sozlanmoqda..."
 DB_DATABASE=$(grep DB_DATABASE .env | cut -d '=' -f2)
 DB_USERNAME=$(grep DB_USERNAME .env | cut -d '=' -f2)
-DB_PASSWORD=$(grep DB_PASSWORD .env | cut -d '=' -f2)
 DB_HOST=$(grep DB_HOST .env | cut -d '=' -f2)
 DB_PORT=$(grep DB_PORT .env | cut -d '=' -f2)
-mysql -h "$DB_HOST" -P "$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" -e "DROP DATABASE IF EXISTS \`$DB_DATABASE\`; CREATE DATABASE \`$DB_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -h "$DB_HOST" -P "$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" < ../brightbr_job.sql
+mysql -h "$DB_HOST" -P "$DB_PORT" -u"$DB_USERNAME" -e "CREATE DATABASE IF NOT EXISTS \`$DB_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -h "$DB_HOST" -P "$DB_PORT" -u"$DB_USERNAME" "$DB_DATABASE" < ../brightbr_job.sql
 echo "✅ Ma'lumotlar bazasi muvaffaqiyatli import qilindi."
 
 # 10. Yakuniy tozalash
