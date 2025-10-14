@@ -19,10 +19,26 @@ public_html/_ide_helper.php
 public_html/.DS_Store
 
 # Custom ignores
-# run.sh
 /mysql-data/
 /mysql-run/
 mysql.log
 *.log
 error_log
 .idx/.data
+
+# SQL dumps (katta fayllar)
+*.sql
+!schema.sql
+
+# Composer
+public_html/composer.phar
+
+# Local test files
+public_html/test_env.php
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
