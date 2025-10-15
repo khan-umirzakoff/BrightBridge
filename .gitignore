@@ -18,6 +18,8 @@ public_html/.idea
 public_html/_ide_helper.php
 public_html/.DS_Store
 
+public_html/.env
+
 # Custom ignores
 /mysql-data/
 /mysql-run/
