@@ -7,3 +7,4 @@
 - [x] Maximize content length sent to AI (50000 chars per doc, 150000 total)
 - [x] Improve semantic search granularity (2000 char chunks, max 20 chunks)
 - [x] Make AI aware of all website data (search all tables with embeddings)
+ujdhuucsucb
