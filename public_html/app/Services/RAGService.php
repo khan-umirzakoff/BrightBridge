@@ -110,7 +110,7 @@ class RAGService
             }
 
             // PROFESSIONAL CHUNK-LEVEL SEARCH for ai_documents
-            $documentChunks = $this->searchDocumentChunks($queryEmbedding);
+            $documentChunks = $this->searchDocumentChunks($queryEmbedding, $query);
             foreach ($documentChunks as $chunk) {
                 $allResults[] = $chunk;
             }
@@ -146,10 +146,11 @@ class RAGService
      * This allows AI to answer questions about specific parts of books/documents.
      *
      * @param array $queryEmbedding The embedding vector of the user's query
-     * @param float $threshold Minimum similarity score (default: 0.4)
+     * @param string $query Original query text for context detection
+     * @param float $threshold Minimum similarity score (default: 0.35)
      * @return array Array of relevant chunks with metadata
      */
-    private function searchDocumentChunks(array $queryEmbedding, float $threshold = 0.4): array
+    private function searchDocumentChunks(array $queryEmbedding, string $query = '', float $threshold = 0.3): array
     {
         $documents = DB::table('ai_documents')
             ->whereNotNull('embedding')
@@ -160,21 +161,55 @@ class RAGService
             return [];
         }
 
+        // Detect query context
+        $queryLower = mb_strtolower($query);
+        $seekingEnd = preg_match('/(oxir|xulos|ending|conclusion|last|final|yakuniy)/ui', $queryLower);
+        $seekingBeginning = preg_match('/(bosh|kirish|introduction|first|start|beginning)/ui', $queryLower);
+        $seekingAll = preg_match('/(barcha|hamma|all|every|ro.yxat|list)/ui', $queryLower);
+
+        // Special case: if seeking ALL books, return first chunk from EACH document without similarity filtering
+        if ($seekingAll) {
+            $allDocsResults = [];
+            foreach ($documents as $doc) {
+                $embeddings = json_decode($doc->embedding, true);
+                if (!is_array($embeddings) || empty($embeddings)) {
+                    continue;
+                }
+
+                $isMultiChunk = isset($embeddings[0]) && is_array($embeddings[0]);
+                $totalChunks = $isMultiChunk ? count($embeddings) : 1;
+
+                // Get first chunk text
+                $displayText = mb_substr(trim($doc->content), 0, 800);
+                if (mb_strlen($doc->content) > 800) {
+                    $displayText .= '...';
+                }
+
+                $allDocsResults[] = [
+                    'content' => $this->formatDocumentChunk($doc, 1, $totalChunks, $displayText),
+                    'similarity' => 0.9, // High similarity for "list all" requests
+                    'url' => null,
+                    'title' => $doc->title ?? 'Noma\'lum hujjat',
+                    'document_id' => $doc->id,
+                    'chunk_index' => 0
+                ];
+            }
+            return $allDocsResults;
+        }
+
         $chunkResults = [];
+        $documentsFound = []; // Track unique documents
 
         foreach ($documents as $doc) {
             $embeddings = json_decode($doc->embedding, true);
 
-            // Skip if not a valid array of embeddings
             if (!is_array($embeddings) || empty($embeddings)) {
                 continue;
             }
 
-            // Check if this is a multi-chunk document (array of arrays)
             $isMultiChunk = isset($embeddings[0]) && is_array($embeddings[0]);
 
             if (!$isMultiChunk) {
-                // Single embedding - treat entire document as one chunk
                 $similarity = $this->cosineSimilarity($queryEmbedding, $embeddings);
 
                 if ($similarity > $threshold) {
@@ -182,13 +217,15 @@ class RAGService
                         'content' => $this->formatDocumentChunk($doc, 0, 1, mb_substr($doc->content, 0, 800)),
                         'similarity' => $similarity,
                         'url' => null,
-                        'title' => $doc->title ?? 'Noma\'lum hujjat'
+                        'title' => $doc->title ?? 'Noma\'lum hujjat',
+                        'document_id' => $doc->id
                     ];
+                    $documentsFound[$doc->id] = true;
                 }
             } else {
-                // Multi-chunk document - search each chunk individually
                 $totalChunks = count($embeddings);
                 $chunkSize = intval(ceil(mb_strlen($doc->content) / $totalChunks));
+                $docBestChunk = null;
 
                 foreach ($embeddings as $chunkIndex => $chunkEmbedding) {
                     if (!is_array($chunkEmbedding) || empty($chunkEmbedding)) {
@@ -197,18 +234,26 @@ class RAGService
 
                     $similarity = $this->cosineSimilarity($queryEmbedding, $chunkEmbedding);
 
+                    // Boost last chunks if query seeks ending
+                    if ($seekingEnd && $chunkIndex >= ($totalChunks - 3)) {
+                        $similarity += 0.15; // Significant boost for last 3 chunks
+                    }
+
+                    // Boost first chunks if query seeks beginning
+                    if ($seekingBeginning && $chunkIndex < 3) {
+                        $similarity += 0.15;
+                    }
+
                     if ($similarity > $threshold) {
-                        // Extract the actual text of this chunk
                         $startPos = $chunkIndex * $chunkSize;
                         $chunkText = mb_substr($doc->content, $startPos, $chunkSize);
 
-                        // Clean and trim chunk text for display (max 800 chars)
                         $displayText = mb_substr(trim($chunkText), 0, 800);
                         if (mb_strlen($chunkText) > 800) {
                             $displayText .= '...';
                         }
 
-                        $chunkResults[] = [
+                        $result = [
                             'content' => $this->formatDocumentChunk($doc, $chunkIndex + 1, $totalChunks, $displayText),
                             'similarity' => $similarity,
                             'url' => null,
@@ -216,13 +261,55 @@ class RAGService
                             'chunk_index' => $chunkIndex,
                             'document_id' => $doc->id
                         ];
+
+                        $chunkResults[] = $result;
+
+                        // Track best chunk for this document
+                        if (!isset($docBestChunk[$doc->id]) || $similarity > $docBestChunk[$doc->id]['similarity']) {
+                            $docBestChunk[$doc->id] = $result;
+                        }
                     }
+                }
+
+                if ($docBestChunk) {
+                    $documentsFound[$doc->id] = true;
                 }
             }
         }
 
-        // Sort by similarity and return top 3 chunks (to leave room for other results)
+        // Sort by similarity
         usort($chunkResults, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
+
+        // If seeking all books, ensure at least 1 chunk from each document
+        if ($seekingAll && count($documentsFound) >= 1) {
+            $uniqueDocs = [];
+            $finalResults = [];
+
+            // First pass: get one chunk from each unique document
+            foreach ($chunkResults as $chunk) {
+                if (!isset($uniqueDocs[$chunk['document_id']])) {
+                    $finalResults[] = $chunk;
+                    $uniqueDocs[$chunk['document_id']] = true;
+
+                    // If we found all documents, stop
+                    if (count($uniqueDocs) == count($documentsFound)) {
+                        break;
+                    }
+                }
+            }
+
+            // Second pass: fill remaining slots with best matches
+            foreach ($chunkResults as $chunk) {
+                if (count($finalResults) >= 5) break;
+                if (!in_array($chunk, $finalResults, true)) {
+                    $finalResults[] = $chunk;
+                }
+            }
+
+            return $finalResults;
+        }
+
+        // Default: return top 3 chunks
         return array_slice($chunkResults, 0, 3);
     }
 

@@ -5,7 +5,7 @@
     --chat-secondary-color: #00b894;
     --chat-font: 'Poppins', sans-serif;
     --chat-window-width: 370px;
-    --chat-window-height: 550px; /* O'zgarmas balandlik */
+    --chat-window-height: 550px; /* Fixed height */
 }
 
 #ai-chat-widget * {
@@ -26,7 +26,7 @@
     height: auto;
     width: auto;
     background-color: var(--chat-primary-color);
-    border-radius: 40px; /* To'liqroq kapsula shakli uchun */
+    border-radius: 40px; /* For a more complete capsule shape */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -35,7 +35,7 @@
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s ease, background-color 0.2s ease;
     border: none;
-    padding: 12px 20px; /* Muvozanatli bo'shliq */
+    padding: 12px 20px; /* Balanced spacing */
     color: white;
 }
 
@@ -45,7 +45,7 @@
 }
 
 #chat-icon img {
-    height: 48px; /* Logotip balandligi */
+    height: 48px; /* Logo height */
     width: 48px;
     object-fit: contain;
 }
@@ -54,12 +54,12 @@
     display: flex;
     flex-direction: column;
     text-align: left;
-    line-height: 1.25; /* Qatorlar orasidagi masofa */
+    line-height: 1.25; /* Line spacing */
 }
 
 .chat-icon-line1 {
     font-size: 16px;
-    font-weight: 700; /* Qalinroq qilish */
+    font-weight: 700; /* Make it bolder */
 }
 
 .chat-icon-line2 {
@@ -70,7 +70,7 @@
 
 #chat-window {
     position: absolute;
-    bottom: 100px; /* Yangi tugma balandligiga moslash */
+    bottom: 100px; /* Adjust to new button height */
     right: 0;
     width: var(--chat-window-width);
     height: var(--chat-window-height);
@@ -651,7 +651,7 @@
     #chat-window {
         width: calc(100vw - 30px);
         height: 85vh;
-        bottom: 100px; /* Tugma balandligiga moslash */
+        bottom: 100px; /* Adjust to button height */
     }
     
     #chat-icon {
