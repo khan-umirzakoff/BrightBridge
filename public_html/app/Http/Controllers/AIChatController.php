@@ -42,6 +42,14 @@ class AIChatController extends Controller
         $history = $request->input('history', []);
         $images = $request->input('images', []);
 
+        // Log incoming message and history for debugging duplication issues
+        Log::info('Chat Request Received', [
+            'message' => $message,
+            'message_length' => mb_strlen($message),
+            'history_count' => count($history),
+            'last_history_item' => !empty($history) ? end($history) : null
+        ]);
+
         return response()->stream(function () use ($message, $history, $images) {
             try {
                 // Delegate the entire function calling and streaming logic to the AIService

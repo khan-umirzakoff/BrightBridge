@@ -31,5 +31,11 @@ class AppServiceProvider extends ServiceProvider
         // \App\News::observe(\App\Observers\NewsObserver::class);
         // \App\Trainings::observe(\App\Observers\TrainingsObserver::class);
         // \App\AiKnowledge::observe(\App\Observers\AiKnowledgeObserver::class);
+
+        // Share $category variable globally with all views
+        view()->composer('*', function ($view) {
+            $category = \DB::select("SELECT * FROM category");
+            $view->with('category', $category);
+        });
     }
 }

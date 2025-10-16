@@ -106,7 +106,7 @@
     </div>
 </div>
 
-<!-- Toast bildirishnoma -->
+<!-- Toast notification -->
 <div id="chat-toast" style="position:fixed;top:20px;right:20px;background:#333;color:#fff;padding:12px 16px;border-radius:8px;font-size:14px;z-index:10000;display:none;max-width:300px;word-wrap:break-word;">
     <span id="toast-message"></span>
 </div>
@@ -225,27 +225,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     reader.readAsDataURL(file);
                 }
 
-                // Input tozalash
+                // Clear file input
                 e.target.value = '';
             });
         }
     }
 
-    // Smart scroll - faqat user scroll qilmasa (throttled)
+    // Smart scroll - only when the user is not scrolling (throttled)
     function smartScroll() {
         scrollCounter++;
-        // Har 5-chi chunk da scroll (sekinroq)
+        // Scroll every 5th chunk (slower)
         if (!isUserScrolling && scrollCounter % 5 === 0) {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
     }
 
-    // Force scroll (xabar tugaganda)
+    // Force scroll (when message completes)
     function forceScroll() {
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // Toast bildirishnoma ko'rsatish
+    // Show toast notification
     function showToast(message) {
         const toast = document.getElementById('chat-toast');
         const toastMessage = document.getElementById('toast-message');
@@ -256,14 +256,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     }
 
-    // Send button holatini yangilash
+    // Update send button state
     function updateSendButton() {
         const imagePreviews = document.querySelectorAll('.image-preview-wrapper');
         const imageContainer = document.getElementById('image-previews');
         const hasImage = imagePreviews.length > 0;
         const hasText = chatInputField.value.trim() !== '';
         
-        // Image container ni ko'rsatish/yashirish
+        // Show/hide image container
         if (hasImage) {
             imageContainer.style.display = 'flex';
         } else {
@@ -281,12 +281,12 @@ document.addEventListener('DOMContentLoaded', function() {
     let scrollTimeout = null;
     let scrollCounter = 0;
 
-    // LocalStorage funksiyalari
+    // LocalStorage functions
     function saveChatHistory() {
         try {
             localStorage.setItem('jobcare_ai_history', JSON.stringify(chatHistory));
         } catch (e) {
-            console.error('LocalStorage xato:', e);
+            console.error('LocalStorage error:', e);
         }
     }
 
@@ -416,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateSendButton();
 
         if (!navigator.onLine) {
-            showUserMessageError(userMessageDiv, 'Internetingizni tekshiring');
+            showUserMessageError(userMessageDiv, 'Please check your internet connection.');
             return;
         }
 
@@ -512,7 +512,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     sourcesButton.className = 'sources-button';
                                     sourcesButton.innerHTML = `
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                                        Manbalar
+                                        Sources
                                     `;
 
                                     const sourcesList = document.createElement('div');
@@ -520,6 +520,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                     sourcesList.style.display = 'none';
 
                                     data.sources.forEach(source => {
+                                        // Skip sources without valid URLs
+                                        if (!source.url || source.url === 'null' || source.url === null) {
+                                            return;
+                                        }
                                         const link = document.createElement('a');
                                         link.href = source.url;
                                         link.textContent = source.title || 'Details';
