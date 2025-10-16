@@ -16,13 +16,13 @@
                             colspan="1" aria-sort="ascending" aria-label="">Id</th>
                         <th class="sorting" tabindex="0" aria-controls="example2" rowspan="1" colspan="1" aria-label="">Name</th>
                         <th class="sorting" tabindex="0" aria-controls="example2" rowspan="1" colspan="1" aria-label="">Surname</th>
-                        <th class="sorting" tabindex="0" aria-controls="example2" rowspan="1" colspan="1" aria-label="">Raqam</th>
+                        <th class="sorting" tabindex="0" aria-controls="example2" rowspan="1" colspan="1" aria-label="">Phone</th>
                         <th class="sorting" tabindex="0" aria-controls="example2" rowspan="1" colspan="1" aria-label="">ID</th>
                         <th class="sorting" tabindex="0" aria-controls="example2" rowspan="1" colspan="1" aria-label="">Quantity</th>
                         <th class="sorting" tabindex="0" aria-controls="example2" rowspan="1" colspan="1" aria-label="">Price</th>
                  
                         <th class="sorting" tabindex="0" aria-controls="example2" rowspan="1" colspan="1" aria-label="">Status</th>
-                        <th class="sorting" tabindex="0" aria-controls="example2" rowspan="1" colspan="1" aria-label="">Sell</th>
+                        <th class="sorting" tabindex="0" aria-controls="example2" rowspan="1" colspan="1" aria-label="">Complete</th>
                         <th class="sorting" tabindex="0" aria-controls="example2" rowspan="1" colspan="1" aria-label="">Cancel</th>
 
                     </thead>
@@ -106,7 +106,7 @@
 
 
 
-                        <td class="dtr-control sorting_1" tabindex="0"><a href="{{route("finishord",['id'=>$item['id']])}}"><font color="blue">Sell</font></a></td>
+                        <td class="dtr-control sorting_1" tabindex="0"><a href="{{route("finishord",['id'=>$item['id']])}}"><font color="blue">Complete</font></a></td>
                         <td class="dtr-control sorting_1" tabindex="0"><a href="{{route("cancelord",['id'=>$item['id'],'user_id'=>$item['user_id']])}}"><font color="blue">Cancel</font></a></td>
 
                     </tr><?php }

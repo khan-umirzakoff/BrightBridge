@@ -9,9 +9,9 @@
         <!-- small box -->
         <div class="small-box bg-info">
           <div class="inner">
-            <h3><?=$tov?>ta</h3>
+            <h3><?=$tov?></h3>
 
-            <p>Maxsulotlar</p>
+            <p>Products</p>
           </div>
           <div class="icon">
             <i class="ion ion-bag"></i>
@@ -24,9 +24,9 @@
         <!-- small box -->
         <div class="small-box bg-success">
           <div class="inner">
-            <h3><sup style="font-size: 20px"><?=$ord?>ta</sup></h3>
+            <h3><sup style="font-size: 20px"><?=$ord?></sup></h3>
 
-            <p>Buyurtmalar</p>
+            <p>Orders</p>
           </div>
           <div class="icon">
             <i class="ion ion-stats-bars"></i>
