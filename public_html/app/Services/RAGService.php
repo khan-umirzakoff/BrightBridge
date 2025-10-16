@@ -43,12 +43,12 @@ class RAGService
                     [
                         'name' => 'get_contact_info',
                         'description' => 'Foydalanuvchi aniq kontakt ma\'lumotlarini (telefon, manzil, email) so\'raganda ishlatiladi.',
-                        'parameters' => ['type' => 'object', 'properties' => []]
+                        'parameters' => (object)['type' => 'object', 'properties' => (object)[]]
                     ],
                     [
                         'name' => 'get_platform_stats',
                         'description' => 'Foydalanuvchi platforma statistikasi (ishlar soni, yangiliklar soni, kitoblar soni va hokazo) haqida so\'raganda ishlatiladi.',
-                        'parameters' => ['type' => 'object', 'properties' => []]
+                        'parameters' => (object)['type' => 'object', 'properties' => (object)[]]
                     ]
                 ]
             ]
@@ -233,16 +233,23 @@ class RAGService
     {
         $title = $document->title ?? 'Noma\'lum hujjat';
         $category = $document->category ?? 'umumiy';
+        $description = $document->description ? mb_substr(strip_tags($document->description), 0, 200) : '';
+
+        $metadata = "📚 **{$title}**\n" .
+                   "Kategoriya: {$category}\n";
+
+        if ($description) {
+            $metadata .= "Qisqacha: {$description}...\n";
+        }
 
         if ($totalChunks > 1) {
-            return "📚 **{$title}** (bo'lim {$chunkNumber}/{$totalChunks})\n" .
-                   "Kategoriya: {$category}\n\n" .
-                   "{$text}";
+            $metadata .= "Hujjat hajmi: {$totalChunks} ta bo'limga ajratilgan\n";
+            $metadata .= "Topilgan bo'lim: {$chunkNumber}/{$totalChunks}\n\n";
         } else {
-            return "📚 **{$title}**\n" .
-                   "Kategoriya: {$category}\n\n" .
-                   "{$text}";
+            $metadata .= "\n";
         }
+
+        return $metadata . $text;
     }
 
     /**

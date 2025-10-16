@@ -93,10 +93,10 @@ class GeminiAIService implements AIService
                 'parts' => [['functionCall' => $fullFunctionCall]]
             ];
             $contents[] = [
-                'role' => 'tool',
+                'role' => 'user',
                 'parts' => [['functionResponse' => [
                     'name' => $fullFunctionCall['name'],
-                    'response' => ['content' => $toolResult['content']]
+                    'response' => $toolResult
                 ]]]
             ];
 
@@ -188,11 +188,21 @@ class GeminiAIService implements AIService
         foreach ($images as $imageBase64) {
             $userParts[] = ['inlineData' => ['mimeType' => 'image/jpeg', 'data' => $imageBase64]];
         }
-        
+
         if (!empty($userParts)) {
             $contents[] = ['role' => 'user', 'parts' => $userParts];
         }
-        
+
+        // Log final contents structure for debugging
+        Log::info('Built Gemini Contents', [
+            'total_messages' => count($contents),
+            'current_prompt' => mb_substr($prompt, 0, 100),
+            'last_content' => !empty($contents) ? [
+                'role' => $contents[count($contents) - 1]['role'],
+                'text' => mb_substr($contents[count($contents) - 1]['parts'][0]['text'] ?? '', 0, 100)
+            ] : null
+        ]);
+
         return $contents;
     }
 
