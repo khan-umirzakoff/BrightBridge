@@ -133,24 +133,33 @@ class GeminiAIService implements AIService
         $response = $this->client->post($url, ['json' => $payload, 'stream' => true]);
         $body = $response->getBody();
 
+        $buffer = '';
         while (!$body->eof()) {
-            $line = $this->readStreamLine($body);
-            if (strpos($line, 'data: ') === 0) {
-                $json = trim(substr($line, 6));
+            // Read chunks (not byte-by-byte for performance)
+            $chunk = $body->read(1024); // Read 1KB at a time
+            $buffer .= $chunk;
+
+            // Process complete lines
+            while (($pos = strpos($buffer, "\n")) !== false) {
+                $line = substr($buffer, 0, $pos);
+                $buffer = substr($buffer, $pos + 1);
+
+                if (strpos($line, 'data: ') === 0) {
+                    $json = trim(substr($line, 6));
+                    if (!empty($json)) {
+                        yield json_decode($json, true);
+                    }
+                }
+            }
+        }
+
+        // Process remaining buffer
+        if (!empty($buffer) && strpos($buffer, 'data: ') === 0) {
+            $json = trim(substr($buffer, 6));
+            if (!empty($json)) {
                 yield json_decode($json, true);
             }
         }
-    }
-
-    private function readStreamLine($stream) {
-        $buffer = '';
-        while (strpos($buffer, "\n") === false) {
-            if ($stream->eof()) {
-                return $buffer;
-            }
-            $buffer .= $stream->read(1);
-        }
-        return $buffer;
     }
 
     private function assembleFunctionCall(array $parts): array
