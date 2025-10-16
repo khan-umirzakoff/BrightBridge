@@ -132,7 +132,7 @@
                                     <td>{{ $job->salary }}</td>
                                     <td>{{ $job->date }}</td>
                                     <td>{{$category->title}}</td>
-                                    <td>@if($job->embedding) <span class="badge badge-success">Embedding bor</span> @else <span class="badge badge-danger">Embedding yo'q</span> @endif</td>
+                                    <td>@if($job->embedding) <span class="badge badge-success">Embedded</span> @else <span class="badge badge-danger">Not Embedded</span> @endif</td>
 
                                     <td>
                                         <!-- Edit and Delete buttons in the same row -->

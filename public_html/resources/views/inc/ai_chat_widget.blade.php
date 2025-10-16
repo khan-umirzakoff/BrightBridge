@@ -40,8 +40,8 @@
 </style>
 
 <div id="ai-chat-widget">
-    <button id="chat-icon" aria-label="Chatni ochish">
-        <img src="{{ asset('upl/1111.png') }}" alt="Chatni ochish">
+    <button id="chat-icon" aria-label="Open Chat">
+        <img src="{{ asset('upl/1111.png') }}" alt="Open Chat">
         <div class="chat-icon-text">
             <span class="chat-icon-line1">JobCare</span>
             <span class="chat-icon-line2">Assistant</span>
@@ -55,16 +55,16 @@
                     <h2 id="chat-header-title" class="ai-title">JobCare Assistant</h2>
                 </div>
             </div>
-            <button id="clear-chat" aria-label="Yangi suhbat" style="margin-right: 10px;" title="Yangi suhbat boshlash">
+            <button id="clear-chat" aria-label="New Chat" style="margin-right: 10px;" title="Start New Chat">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
                 </svg>
             </button>
-            <button id="close-chat" aria-label="Chatni yopish">&times;</button>
+            <button id="close-chat" aria-label="Close Chat">&times;</button>
         </div>
         <div id="chat-messages" role="log" aria-live="polite">
            <div class="bot-message message">
-                Salom! Men JobCare AI yordamchisiman. Sizga qanday yordam bera olaman?
+                Hello! I'm JobCare AI Assistant. How can I help you?
             </div>
         </div>
         
@@ -91,14 +91,14 @@
             <div id="image-previews" style="display:none;flex-wrap:wrap;gap:5px;margin-bottom:10px;width:100%;"></div>
             <div style="display:flex;align-items:center;gap:8px;width:100%;border:1px solid #ddd;border-radius:25px;padding:8px 12px;background:#fff;">
                 <input type="file" id="chat-image-input" accept="image/*" multiple style="display:none;">
-                <input type="text" id="chat-input-field" placeholder="Xabar yozing..." aria-label="Xabar kiritish maydoni" style="flex:1;border:none;outline:none;font-size:14px;padding:8px 0;">
-                <button id="chat-image-button" aria-label="Rasm yuborish" title="Rasm yuklash" style="background:none;border:none;cursor:pointer;padding:6px;border-radius:50%;display:flex;align-items:center;justify-content:center;width:32px;height:32px;color:#666;transition:background-color 0.2s;">
+                <input type="text" id="chat-input-field" placeholder="Type a message..." aria-label="Message input field" style="flex:1;border:none;outline:none;font-size:14px;padding:8px 0;">
+                <button id="chat-image-button" aria-label="Send Image" title="Upload Image" style="background:none;border:none;cursor:pointer;padding:6px;border-radius:50%;display:flex;align-items:center;justify-content:center;width:32px;height:32px;color:#666;transition:background-color 0.2s;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path opacity="0.7" d="M17 9.00195C19.175 9.01406 20.3529 9.11051 21.1213 9.8789C22 10.7576 22 12.1718 22 15.0002V16.0002C22 18.8286 22 20.2429 21.1213 21.1215C20.2426 22.0002 18.8284 22.0002 16 22.0002H8C5.17157 22.0002 3.75736 22.0002 2.87868 21.1215C2 20.2429 2 18.8286 2 16.0002L2 15.0002C2 12.1718 2 10.7576 2.87868 9.87889C3.64706 9.11051 4.82497 9.01406 7 9.00195" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                         <path d="M12 15L12 2M12 2L15 5.5M12 2L9 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </button>
-                <button id="chat-send-button" aria-label="Xabarni yuborish" style="background:#0d2d62;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;">
+                <button id="chat-send-button" aria-label="Send Message" style="background:#0d2d62;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
             </div>
@@ -124,18 +124,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatMessages = document.getElementById('chat-messages');
 
     if (chatIcon && chatWindow && closeChat) {
-        // Asosiy tugmani bosganda oynani ochish/yopish
+        // Main button click to open/close window
         chatIcon.addEventListener('click', function(event) {
             event.stopPropagation();
             chatWindow.classList.toggle('open');
         });
 
-        // "X" tugmasini bosganda oynani yopish
+        // Close button click to close window
         closeChat.addEventListener('click', function() {
             chatWindow.classList.remove('open');
         });
 
-        // Yangi suhbat modal
+        // New chat modal
         const newChatModal = document.getElementById('new-chat-modal');
         const confirmNewChat = document.getElementById('confirm-new-chat');
         const cancelNewChat = document.getElementById('cancel-new-chat');
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Rasm yuborish
+        // Image upload
         if (chatImageButton && chatImageInput) {
             chatImageButton.addEventListener('click', () => {
                 chatImageInput.click();
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const totalFiles = existingPreviews + files.length;
 
                 if (totalFiles > 3) {
-                    showToast('Maksimal 3 ta rasm yuborish mumkin.');
+                    showToast('Maximum 3 images can be sent.');
                     e.target.value = '';
                     return;
                 }
@@ -197,15 +197,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
 
-                    // Fayl hajmini tekshirish (max 5MB)
+                    // Check file size (max 5MB)
                     const maxSize = 5 * 1024 * 1024; // 5MB
                     if (file.size > maxSize) {
-                        showToast('Rasm hajmi juda katta! Maksimal 5MB.');
+                        showToast('Image size is too large! Maximum 5MB.');
                         e.target.value = '';
                         return;
                     }
 
-                    // Rasm preview - input ustida kichik ko'rsatish
+                    // Image preview - show small preview above input
                     const reader = new FileReader();
                     reader.onload = (event) => {
                         const imageContainer = document.getElementById('image-previews');
@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
         chatSendButton.disabled = !(hasText || hasImage);
     }
 
-    // Chat history saqlash (LocalStorage dan yuklash)
+    // Chat history save (load from LocalStorage)
     let chatHistory = loadChatHistory();
     
     // Auto-scroll state
@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (saved) {
                 const history = JSON.parse(saved);
 
-                // Eski xabarlarni UI ga qayta yuklash
+                // Reload old messages to UI
                 setTimeout(() => {
                     history.forEach(msg => {
                         if (msg.text || msg.images) {
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return history;
             }
         } catch (e) {
-            console.error('LocalStorage yuklash xato:', e);
+            console.error('LocalStorage load error:', e);
         }
         return [];
     }
@@ -332,10 +332,10 @@ document.addEventListener('DOMContentLoaded', function() {
         chatHistory = [];
         localStorage.removeItem('jobcare_ai_history');
         
-        // UI dan ham o'chirish (boshlang'ich xabardan tashqari)
+        // Remove from UI as well (except initial message)
         const messages = chatMessages.querySelectorAll('.message');
         messages.forEach((msg, index) => {
-            if (index > 0) msg.remove(); // Birinchi bot xabarni saqlaymiz
+            if (index > 0) msg.remove(); // Keep first bot message
         });
     }
 
@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (message === '' && imagePreviews.length === 0) return;
 
         if (imagePreviews.length > 0 && message === '') {
-            showToast('Rasm yuborish uchun matn ham kiritish kerak.');
+            showToast('Text must be entered to send image.');
             return;
         }
 
@@ -453,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (loadingDiv.parentElement) loadingDiv.remove();
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: 'Server bilan bog\'lanishda xatolik.' }));
+                const errorData = await response.json().catch(() => ({ error: 'Server connection error.' }));
                 throw new Error(errorData.error || 'Network response was not ok');
             }
 
@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     data.sources.forEach(source => {
                                         const link = document.createElement('a');
                                         link.href = source.url;
-                                        link.textContent = source.title || 'Batafsil';
+                                        link.textContent = source.title || 'Details';
                                         link.target = '_blank';
                                         sourcesList.appendChild(link);
                                     });
@@ -562,9 +562,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const errorDiv = document.createElement('div');
             errorDiv.className = 'bot-message message error-message';
             if (!navigator.onLine) {
-                errorDiv.textContent = 'Internet aloqasi uzildi. Iltimos, qayta ulanib, urinib ko\'ring.';
+                errorDiv.textContent = 'Internet connection lost. Please reconnect and try again.';
             } else {
-                errorDiv.textContent = 'Kechirasiz, xatolik yuz berdi. Iltimos, qayta urinib ko\'ring.';
+                errorDiv.textContent = 'Sorry, an error occurred. Please try again.';
             }
             chatMessages.appendChild(errorDiv);
         } finally {
@@ -576,7 +576,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Input maydonida o'zgarish bo'lganda send button yangilanishi
+    // Update send button when input field changes
     if (chatInputField) {
         chatInputField.addEventListener('input', updateSendButton);
 
@@ -588,7 +588,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Yuborish tugmasi bosilganda xabar yuborish
+    // Send message when send button is clicked
     if (chatSendButton) {
         chatSendButton.addEventListener('click', function() {
             sendMessage();

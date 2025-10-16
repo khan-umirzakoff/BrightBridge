@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'AI Hujjatlar Boshqaruvi')
+@section('title', 'AI Documents Management')
 
 @section('content')
 <div class=\"container-fluid\">
@@ -8,9 +8,9 @@
         <div class=\"col-12\">
             <div class=\"card\">
                 <div class=\"card-header\">
-                    <h3 class=\"card-title\">AI Bilim Bazasi - Hujjatlar</h3>
+                    <h3 class=\"card-title\">AI Knowledge Base - Documents</h3>
                     <button class=\"btn btn-primary btn-sm float-right\" data-toggle=\"modal\" data-target=\"#uploadModal\">
-                        <i class=\"fas fa-plus\"></i> Yangi Hujjat
+                        <i class=\"fas fa-plus\"></i> New Document
                     </button>
                 </div>
                 <div class=\"card-body\">
@@ -19,12 +19,12 @@
                             <thead>
                                 <tr>
                                     <th>ID</th>
-                                    <th>Sarlavha</th>
-                                    <th>Kategoriya</th>
-                                    <th>Tavsif</th>
-                                    <th>Fayl</th>
-                                    <th>Sana</th>
-                                    <th>Amallar</th>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th>File</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -43,7 +43,7 @@
     <div class=\"modal-dialog modal-lg\" role=\"document\">
         <div class=\"modal-content\">
             <div class=\"modal-header\">
-                <h5 class=\"modal-title\">Yangi Hujjat Yuklash</h5>
+                <h5 class=\"modal-title\">Upload New Document</h5>
                 <button type=\"button\" class=\"close\" data-dismiss=\"modal\">
                     <span>&times;</span>
                 </button>
@@ -51,43 +51,43 @@
             <form id=\"uploadForm\" enctype=\"multipart/form-data\">
                 <div class=\"modal-body\">
                     <div class=\"form-group\">
-                        <label for=\"title\">Sarlavha *</label>
+                        <label for=\"title\">Title *</label>
                         <input type=\"text\" class=\"form-control\" id=\"title\" name=\"title\" required>
                     </div>
                     <div class=\"form-group\">
-                        <label for=\"category\">Kategoriya</label>
+                        <label for=\"category\">Category</label>
                         <select class=\"form-control\" id=\"category\" name=\"category\">
-                            <option value=\"\">Kategoriya tanlang</option>
-                            <option value=\"guide\">Qo'llanma</option>
-                            <option value=\"policy\">Siyosat</option>
+                            <option value=\"\">Select Category</option>
+                            <option value=\"guide\">Guide</option>
+                            <option value=\"policy\">Policy</option>
                             <option value=\"faq\">FAQ</option>
-                            <option value=\"training\">O'quv materiali</option>
-                            <option value=\"procedure\">Jarayon</option>
-                            <option value=\"other\">Boshqa</option>
+                            <option value=\"training\">Training Material</option>
+                            <option value=\"procedure\">Procedure</option>
+                            <option value=\"other\">Other</option>
                         </select>
                     </div>
                     <div class=\"form-group\">
-                        <label for=\"description\">Tavsif</label>
+                        <label for=\"description\">Description</label>
                         <textarea class=\"form-control\" id=\"description\" name=\"description\" rows=\"3\"></textarea>
                     </div>
                     <div class=\"form-group\">
-                        <label for=\"file\">Fayl *</label>
+                        <label for=\"file\">File *</label>
                         <input type=\"file\" class=\"form-control-file\" id=\"file\" name=\"file\" 
                                accept=\".txt,.md,.pdf,.doc,.docx\" required>
                         <small class=\"form-text text-muted\">
-                            Qo'llab-quvvatlanadigan formatlar: TXT, MD, PDF, DOC, DOCX (max 10MB)
+                            Supported formats: TXT, MD, PDF, DOC, DOCX (max 10MB)
                         </small>
                     </div>
                     <div class=\"form-group\">
-                        <label for=\"content\">Matn Mazmuni (ixtiyoriy)</label>
+                        <label for=\"content\">Text Content (optional)</label>
                         <textarea class=\"form-control\" id=\"content\" name=\"content\" rows=\"5\" 
-                                placeholder=\"Agar fayl matnini o'qib bo'lmasa, bu yerga qo'lda kiriting...\"></textarea>
+                                placeholder=\"If file text cannot be read, enter it manually here...\"></textarea>
                     </div>
                 </div>
                 <div class=\"modal-footer\">
-                    <button type=\"button\" class=\"btn btn-secondary\" data-dismiss=\"modal\">Bekor qilish</button>
+                    <button type=\"button\" class=\"btn btn-secondary\" data-dismiss=\"modal\">Cancel</button>
                     <button type=\"submit\" class=\"btn btn-primary\">
-                        <i class=\"fas fa-upload\"></i> Yuklash
+                        <i class=\"fas fa-upload\"></i> Upload
                     </button>
                 </div>
             </form>
@@ -122,13 +122,13 @@ $(document).ready(function() {
                     $('#uploadModal').modal('hide');
                     $('#uploadForm')[0].reset();
                     loadDocuments();
-                    toastr.success('Hujjat muvaffaqiyatli yuklandi!');
+                    toastr.success('Document uploaded successfully!');
                 } else {
-                    toastr.error(response.error || 'Xatolik yuz berdi');
+                    toastr.error(response.error || 'An error occurred');
                 }
             },
             error: function(xhr) {
-                var error = 'Yuklashda xatolik';
+                var error = 'Upload error';
                 if (xhr.responseJSON && xhr.responseJSON.error) {
                     error = xhr.responseJSON.error;
                 }
@@ -169,7 +169,7 @@ $(document).ready(function() {
     }
     
     window.deleteDocument = function(id) {
-        if (confirm("Hujjatni o'chirishni tasdiqlaysizmi?")) {
+        if (confirm("Are you sure you want to delete this document?")) {
             $.ajax({
                 url: `/admin/ai-documents/${id}`,
                 type: 'DELETE',
@@ -179,13 +179,13 @@ $(document).ready(function() {
                 success: function(response) {
                     if (response.success) {
                         loadDocuments();
-                        toastr.success("Hujjat o'chirildi");
+                        toastr.success("Document deleted");
                     } else {
-                        toastr.error(response.error || 'Xatolik yuz berdi');
+                        toastr.error(response.error || 'An error occurred');
                     }
                 },
                 error: function() {
-                    toastr.error("O'chirishda xatolik");
+                    toastr.error("Error during deletion");
                 }
             });
         }
