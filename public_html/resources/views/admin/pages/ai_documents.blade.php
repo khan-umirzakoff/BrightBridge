@@ -153,8 +153,9 @@
 <div id="loading-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center;">
     <div class="text-center text-white">
         <div class="spinner-border text-primary" style="width: 4rem; height: 4rem;" role="status"></div>
-        <h4 class="mt-4">Processing File...</h4>
-        <p class="text-muted">Please wait while the file is uploaded and processed.</p>
+        <h4 class="mt-4">Generating Embeddings...</h4>
+        <p class="text-muted">Please wait. This may take a few minutes.</p>
+        <p class="text-warning font-weight-bold">⚠️ Do not close or refresh this page!</p>
     </div>
 </div>
 
@@ -239,25 +240,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Make delete function global
     window.deleteDocument = function(id) {
-        if (confirm("Are you sure you want to delete this document?")) {
-            fetch(`/admin/ai-documents/${id}`, {
-                method: 'DELETE',
-                headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
-            })
-            .then(response => response.json().then(data => ({ ok: response.ok, data })))
-            .then(({ ok, data }) => {
-                if (ok) {
-                    showMessage('success', data.message || 'Document deleted. Reloading...');
-                    setTimeout(() => window.location.reload(), 1500);
-                } else {
-                    showMessage('error', `Error: ${data.error || 'Could not delete document.'}`);
-                }
-            })
-            .catch(error => {
-                console.error('Delete error:', error);
-                showMessage('error', 'A network error occurred during deletion.');
-            });
-        }
+        confirmAction({
+            title: 'Delete Document',
+            message: 'Are you sure you want to delete this document? This action cannot be undone.',
+            confirmText: 'Yes, Delete',
+            confirmClass: 'btn-danger',
+            onConfirm: function() {
+                fetch(`/admin/ai-documents/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(response => response.json().then(data => ({ ok: response.ok, data })))
+                .then(({ ok, data }) => {
+                    if (ok) {
+                        showMessage('success', data.message || 'Document deleted. Reloading...');
+                        setTimeout(() => window.location.reload(), 1500);
+                    } else {
+                        showMessage('error', `Error: ${data.error || 'Could not delete document.'}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Delete error:', error);
+                    showMessage('error', 'A network error occurred during deletion.');
+                });
+            }
+        });
     };
 });
 </script>
